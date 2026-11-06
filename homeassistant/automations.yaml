@@ -1,0 +1,12 @@
+- id: fruitai_aviso
+  alias: FruitAI - mostrar aviso del servicio
+  description: Muestra como notificación los avisos que publica el servicio (ej. salida rechazada).
+  triggers:
+    - trigger: mqtt
+      topic: fruitai/aviso
+  actions:
+    - action: persistent_notification.create
+      data:
+        title: FruitAI
+        message: "{{ trigger.payload }}"
+  mode: queued

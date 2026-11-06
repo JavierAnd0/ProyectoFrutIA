@@ -1,0 +1,18 @@
+.env
+.venv/
+__pycache__/
+.pytest_cache/
+
+# Datos en ejecución
+data/
+mosquitto/data/
+mosquitto/config/passwd
+ollama/
+
+# Home Assistant: solo se versiona la configuración escrita a mano
+homeassistant/*
+!homeassistant/configuration.yaml
+!homeassistant/automations.yaml
+
+.DS_Store
+~$*.docx

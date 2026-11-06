@@ -1,0 +1,6 @@
+# Configuración mínima de FruitAI. HA crea el resto de archivos al arrancar.
+# El broker MQTT NO se configura aquí: se agrega desde la interfaz
+# (Ajustes → Dispositivos y servicios → MQTT), broker "mosquitto", puerto 1883.
+default_config:
+
+automation: !include automations.yaml

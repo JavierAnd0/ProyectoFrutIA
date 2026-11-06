@@ -1,0 +1,64 @@
+# FruitAI — despliegue de desarrollo.
+# Funciona igual en el Mac, en un PC viejo con Linux y en la Raspberry Pi 5
+# (todas las imágenes son multi-arquitectura: amd64 y arm64).
+#
+#   docker compose up -d                      # HA + Mosquitto + servicio
+#   docker compose --profile ollama up -d     # + Ollama en contenedor (solo CPU)
+#
+# Diferencia con el borrador del plan (sección 4.1): aquí no se usa
+# network_mode: host porque en Docker Desktop (Mac) no se comporta igual que en
+# Linux. Con puertos publicados, HA llega al broker como "mosquitto" y a Ollama
+# como "ollama" (o host.docker.internal si Ollama corre fuera de Docker).
+
+services:
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    container_name: fruitai-homeassistant
+    ports: ["8123:8123"]
+    volumes:
+      - ./homeassistant:/config
+    environment:
+      - TZ=${TZ:-America/Bogota}
+    depends_on: [mosquitto]
+    restart: unless-stopped
+
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: fruitai-mosquitto
+    ports: ["1883:1883"]
+    volumes:
+      - ./mosquitto/config:/mosquitto/config
+      - ./mosquitto/data:/mosquitto/data
+    restart: unless-stopped
+
+  servicio:
+    build: ./servicio
+    container_name: fruitai-servicio
+    environment:
+      - MQTT_HOST=mosquitto
+      - MQTT_PORT=1883
+      - MQTT_USUARIO=${MQTT_USUARIO_SERVICIO}
+      - MQTT_CLAVE=${MQTT_CLAVE_SERVICIO}
+      - DB_RUTA=/data/fruitai.db
+      - FRUTAS=${FRUTAS:-manzana,pera,banano,kiwi}
+      - TZ=${TZ:-America/Bogota}
+    volumes:
+      - ./data:/data              # aquí vive fruitai.db (SQLite)
+    depends_on: [mosquitto]
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama
+    container_name: fruitai-ollama
+    profiles: ["ollama"]          # no arranca salvo que se pida
+    ports: ["11434:11434"]
+    volumes:
+      - ./ollama:/root/.ollama
+    environment:
+      - OLLAMA_MAX_LOADED_MODELS=1
+      - OLLAMA_NUM_PARALLEL=1
+    # Límites aproximados a una Pi 5 de 8 GB, para que las pruebas en el Mac o
+    # en el PC no den números irreales. No sustituyen medir en la Pi.
+    cpus: 4
+    mem_limit: 6g
+    restart: unless-stopped
