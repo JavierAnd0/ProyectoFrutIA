@@ -4,3 +4,33 @@
 default_config:
 
 automation: !include automations.yaml
+
+# Respuestas de las oraciones locales (custom_sentences/es/fruitai.yaml).
+# Leen los sensores que publica el servicio: no calculan nada.
+intent_script:
+  FruitaiStock:
+    speech:
+      text: >
+        {% set n = states('sensor.fruitai_stock_' ~ fruta) %}
+        {% if n in ['unknown', 'unavailable'] %}No tengo el dato de {{ fruta }} en este momento.
+        {% elif n | int(0) == 1 %}Hay 1 {{ fruta }}.
+        {% else %}Hay {{ n }} {{ fruta }}s.{% endif %}
+
+  FruitaiSalidas:
+    speech:
+      text: >
+        {% set n = states('sensor.fruitai_salidas_' ~ periodo ~ '_' ~ fruta) %}
+        {% set cuando = 'Hoy' if periodo == 'hoy' else 'Esta semana' %}
+        {% if n in ['unknown', 'unavailable'] %}No tengo el dato de salidas de {{ fruta }} en este momento.
+        {% elif n | int(0) == 1 %}{{ cuando }} salió 1 {{ fruta }}.
+        {% else %}{{ cuando }} salieron {{ n }} {{ fruta }}s.{% endif %}
+
+  FruitaiInventario:
+    speech:
+      text: >
+        {% set ns = namespace(partes=[]) %}
+        {% for f in ['manzana', 'pera', 'banano', 'kiwi'] %}
+          {% set n = states('sensor.fruitai_stock_' ~ f) | int(0) %}
+          {% set ns.partes = ns.partes + [n ~ ' ' ~ (f if n == 1 else f ~ 's')] %}
+        {% endfor %}
+        Hay {{ ns.partes[:-1] | join(', ') }} y {{ ns.partes[-1] }}.

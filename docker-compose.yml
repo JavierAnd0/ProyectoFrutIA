@@ -51,7 +51,9 @@ services:
     image: ollama/ollama
     container_name: fruitai-ollama
     profiles: ["ollama"]          # no arranca salvo que se pida
-    ports: ["11434:11434"]
+    # 11435 afuera para no chocar con un Ollama instalado en el equipo.
+    # HA llega por la red interna de Docker: http://ollama:11434
+    ports: ["11435:11434"]
     volumes:
       - ./ollama:/root/.ollama
     environment:

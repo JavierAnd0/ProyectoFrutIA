@@ -13,6 +13,7 @@ ollama/
 homeassistant/*
 !homeassistant/configuration.yaml
 !homeassistant/automations.yaml
+!homeassistant/custom_sentences/
 
 .DS_Store
 ~$*.docx

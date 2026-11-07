@@ -14,4 +14,7 @@
   que corre las mismas imágenes que usará la Pi. `network_mode: host` del plan no se comporta igual
   en Docker Desktop: se usan puertos publicados y nombres de servicio (`mosquitto`).
   Riesgo detectado: con MQTT QoS 1 un evento puede llegar dos veces → se añadió `evento_id`.
+  La automatización de avisos falló (`mqtt_not_setup_cannot_subscribe`) porque HA arrancó antes de
+  configurar la integración MQTT; se resolvió reiniciando HA (o recargando automatizaciones) después
+  de agregar MQTT. En una instalación nueva: primero MQTT, luego automatizaciones.
 - Evidencia: [COMPLETAR: captura de `simular_esp32.py escuchar` y de la tabla movimientos]

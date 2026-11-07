@@ -1,0 +1,42 @@
+# Oraciones locales de Assist (sin LLM): responden al instante y siempre bien.
+# Las preguntas que no encajen aquí pasan al agente de Ollama.
+# Si se agrega una fruta en .env (FRUTAS), agregarla también en la lista "fruta".
+language: "es"
+intents:
+  FruitaiStock:
+    data:
+      - sentences:
+          - "(cuántas|cuantas|cuántos|cuantos) {fruta} (hay|quedan|tengo|tenemos|hay en el frutero)"
+          - "(cuánto|cuanto) [stock|inventario] de {fruta} (hay|queda|tengo|tenemos)"
+          - "[cuál es el|cual es el] (stock|inventario) de {fruta}"
+          - "hay {fruta}"
+  FruitaiSalidas:
+    data:
+      - sentences:
+          - "(cuántas|cuantas|cuántos|cuantos) {fruta} (salieron|se consumieron|se comieron|se usaron|se sacaron) {periodo}"
+          - "(cuántas|cuantas|cuántos|cuantos) {fruta} [se] (salieron|consumieron|comieron|sacaron) {periodo}"
+          - "salidas de {fruta} {periodo}"
+  FruitaiInventario:
+    data:
+      - sentences:
+          - "(qué|que) frutas (hay|quedan|tengo|tenemos)"
+          - "(cuál|cual) es el inventario [de frutas]"
+          - "(cómo|como) está el inventario [de frutas]"
+          - "inventario [de frutas]"
+lists:
+  fruta:
+    values:
+      - in: "(manzana|manzanas)"
+        out: "manzana"
+      - in: "(pera|peras)"
+        out: "pera"
+      - in: "(banano|bananos|banana|bananas|plátano|plátanos|platano|platanos)"
+        out: "banano"
+      - in: "(kiwi|kiwis)"
+        out: "kiwi"
+  periodo:
+    values:
+      - in: "hoy"
+        out: "hoy"
+      - in: "(esta semana|en la semana|la semana|en esta semana)"
+        out: "semana"
