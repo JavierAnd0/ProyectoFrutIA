@@ -118,8 +118,8 @@ def main() -> None:
                + ", ".join(f"{i + 1}={c}" for i, c in enumerate(clases_manual)))
 
     conf = Confirmador(umbral=args.umbral, frames_confirmar=args.frames, frames_retiro=args.frames)
+    cap = abrir_camara(args.camara)   # antes que MQTT: si no hay cámara, no se anuncia "online"
     mqtt = None if args.sin_mqtt else Mqtt(args.host, args.port)
-    cap = abrir_camara(args.camara)
 
     presencia, manual = True, "fondo"
     etiqueta, confianza = "fondo", 1.0
