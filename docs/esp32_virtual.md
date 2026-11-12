@@ -45,7 +45,33 @@ Pulsa `3` (la cámara "ve" una pera) → en ~1 s queda **CONFIRMADA** → `e` re
 una entrada → mira el stock en HA o con `./scripts/fruitai.sh db`. Si vuelves a
 pulsar `e` sin retirar la fruta, se ignora. `0` (fondo) retira la fruta y rearma.
 
-## 2. Capturar el dataset con la webcam
+## 2. Dataset: Fruits-360 + fotos propias
+
+El dataset es mixto:
+
+| Origen | Clases | Por clase |
+|---|---|---|
+| [Fruits-360](https://github.com/fruits-360/fruits-360-100x100) (Mihai Oltean, CC BY-SA 4.0), 100×100, fondo blanco | manzana_roja, manzana_verde, pera, banano, kiwi | 150 |
+| Fotos propias en el montaje (webcam ahora, ESP32 después) | las 5 frutas | 30–50 |
+| Fotos propias | fondo | ~100 |
+
+Fruits-360 aporta variedad (varias manzanas, peras y bananos); las fotos propias
+adaptan el modelo a la luz, el fondo y la cámara reales, y "fondo" solo puede salir
+del montaje. Variedades elegidas y excluidas: ver `scripts/preparar_fruits360.py`.
+
+Para regenerar la parte de Fruits-360 (descarga solo nuestras frutas, ~85 MB):
+
+```bash
+git clone --depth 1 --filter=blob:none --sparse https://github.com/fruits-360/fruits-360-100x100.git /tmp/f360
+.venv/bin/python scripts/preparar_fruits360.py --repo /tmp/f360 --imprimir-patrones | git -C /tmp/f360 sparse-checkout set --no-cone --stdin
+.venv/bin/python scripts/preparar_fruits360.py --repo /tmp/f360 --por-clase 150
+```
+
+Esas fotos se llaman `<clase>.f360-*.jpg`; las propias, `<clase>.<n>.jpg`. Así se
+pueden contar o quitar por separado (p. ej. para comparar en el documento un modelo
+solo con Fruits-360 contra el mixto).
+
+### Capturar las fotos propias con la webcam
 
 ```bash
 .venv/bin/python simulador/capturar_dataset.py
@@ -54,7 +80,7 @@ pulsar `e` sin retirar la fruta, se ignora. `0` (fondo) retira la fruta y rearma
 - Fondo y luz fijos (cartulina blanca + lámpara), la fruta dentro del cuadrado.
 - `1..6` guarda una foto de esa clase; `r` activa la ráfaga (una foto cada 0,4 s)
   mientras giras y mueves la fruta.
-- Meta: ~100 fotos por clase, más "fondo" (sin fruta, con la mano, sombras…).
+- Meta: 30–50 fotos por fruta y ~100 de "fondo" (sin fruta, con la mano, sombras…).
 - Las fotos quedan en `dataset/<clase>/<clase>.<n>.jpg` (no se suben a git).
 
 ## 3. Entrenar en Edge Impulse
