@@ -59,8 +59,8 @@ services:
     environment:
       - OLLAMA_MAX_LOADED_MODELS=1
       - OLLAMA_NUM_PARALLEL=1
-    # Límites aproximados a una Pi 5 de 8 GB, para que las pruebas en el Mac o
-    # en el PC no den números irreales. No sustituyen medir en la Pi.
-    cpus: 4
+    # Sin límite de CPU: en Docker Desktop (Mac) limitar CPU no imita a la Pi,
+    # solo la ahoga (medido: "cpus: 4" → 2,3 tokens/s; "cpuset: 0-3" → 0,2).
+    # Los tiempos que van al documento se miden en la Raspberry Pi.
     mem_limit: 6g
     restart: unless-stopped

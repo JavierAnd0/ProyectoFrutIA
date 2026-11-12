@@ -31,6 +31,8 @@ Home Assistant: http://localhost:8123 (o la IP del equipo).
    usuario/clave `MQTT_USUARIO_HA` / `MQTT_CLAVE_HA` del `.env`.
 3. Aparece el dispositivo **FruitAI** con los sensores "Stock manzana", "Salidas hoy banano", etc.
 
+Respaldo y restauración en la Raspberry Pi (sin copiar la SD completa): [docs/restaurar.md](docs/restaurar.md).
+
 ## Simular el ESP32
 
 ```bash
@@ -45,7 +47,19 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
 ## Pruebas
 
 ```bash
-.venv/bin/python -m pytest -q servicio/tests
+.venv/bin/python -m pytest -q servicio/tests simulador/tests
+```
+
+## ESP32-S3 virtual (cámara del Mac)
+
+Mientras no hay hardware: capturar el dataset con la webcam, entrenar en Edge Impulse y
+correr el modelo con la misma lógica anti-duplicados y los mismos mensajes MQTT que el
+firmware. Ver [docs/esp32_virtual.md](docs/esp32_virtual.md).
+
+```bash
+.venv/bin/pip install -r requirements-camara.txt
+.venv/bin/python simulador/capturar_dataset.py
+.venv/bin/python simulador/esp32_virtual.py --modelo modelos/fruitai.tflite
 ```
 
 ## Contrato MQTT (lo que el firmware debe respetar)

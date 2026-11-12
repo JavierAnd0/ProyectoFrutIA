@@ -1,0 +1,89 @@
+# Panel FruitAI. Se edita aquí (modo YAML) y queda versionado en git.
+views:
+  - title: Inventario
+    path: inventario
+    icon: mdi:fruit-cherries
+    cards:
+      - type: glance
+        title: Stock actual
+        columns: 4
+        entities:
+          - entity: sensor.fruitai_stock_manzana
+            name: Manzana
+            icon: mdi:food-apple
+          - entity: sensor.fruitai_stock_pera
+            name: Pera
+            icon: mdi:fruit-pear
+          - entity: sensor.fruitai_stock_banano
+            name: Banano
+            icon: mdi:fruit-watermelon
+          - entity: sensor.fruitai_stock_kiwi
+            name: Kiwi
+            icon: mdi:fruit-citrus
+
+      - type: vertical-stack
+        cards:
+          - type: entities
+            title: Simular movimiento (prueba sin ESP32)
+            entities:
+              - input_select.fruitai_fruta
+              - input_number.fruitai_cantidad
+          - type: horizontal-stack
+            cards:
+              - type: button
+                name: Entrada
+                icon: mdi:plus-circle
+                tap_action:
+                  action: perform-action
+                  perform_action: script.fruitai_simular_movimiento
+                  data:
+                    tipo: entrada
+              - type: button
+                name: Salida
+                icon: mdi:minus-circle
+                tap_action:
+                  action: perform-action
+                  perform_action: script.fruitai_simular_movimiento
+                  data:
+                    tipo: salida
+
+      - type: glance
+        title: Frutero
+        entities:
+          - entity: sensor.fruitai_temperatura_frutero
+            name: Temperatura
+          - entity: sensor.fruitai_humedad_frutero
+            name: Humedad
+
+      - type: entities
+        title: Salidas
+        entities:
+          - type: section
+            label: Hoy
+          - entity: sensor.fruitai_salidas_hoy_manzana
+            name: Manzana
+          - entity: sensor.fruitai_salidas_hoy_pera
+            name: Pera
+          - entity: sensor.fruitai_salidas_hoy_banano
+            name: Banano
+          - entity: sensor.fruitai_salidas_hoy_kiwi
+            name: Kiwi
+          - type: section
+            label: Esta semana (lunes a hoy)
+          - entity: sensor.fruitai_salidas_semana_manzana
+            name: Manzana
+          - entity: sensor.fruitai_salidas_semana_pera
+            name: Pera
+          - entity: sensor.fruitai_salidas_semana_banano
+            name: Banano
+          - entity: sensor.fruitai_salidas_semana_kiwi
+            name: Kiwi
+
+      - type: history-graph
+        title: Ambiente últimas 24 h
+        hours_to_show: 24
+        entities:
+          - entity: sensor.fruitai_temperatura_frutero
+            name: Temperatura
+          - entity: sensor.fruitai_humedad_frutero
+            name: Humedad

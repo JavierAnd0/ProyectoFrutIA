@@ -10,6 +10,7 @@ intents:
           - "(cuánto|cuanto) [stock|inventario] de {fruta} (hay|queda|tengo|tenemos)"
           - "[cuál es el|cual es el] (stock|inventario) de {fruta}"
           - "hay {fruta}"
+          - "(me|nos) (quedan|queda) {fruta} [(cuántas|cuantas|cuántos|cuantos)]"
   FruitaiSalidas:
     data:
       - sentences:
@@ -23,6 +24,12 @@ intents:
           - "(cuál|cual) es el inventario [de frutas]"
           - "(cómo|como) está el inventario [de frutas]"
           - "inventario [de frutas]"
+  FruitaiAmbiente:
+    data:
+      - sentences:
+          - "(a qué|a que|qué|que|cuál es la|cual es la) temperatura (está|esta|hay en|tiene|hace en) [el] frutero"
+          - "(qué|que|cuál es la|cual es la) (temperatura|humedad) [hay|tiene|del frutero|en el frutero]"
+          - "(cómo|como) (está|esta) el (frutero|ambiente)"
 lists:
   fruta:
     values:

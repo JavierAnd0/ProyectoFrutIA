@@ -5,6 +5,54 @@ default_config:
 
 automation: !include automations.yaml
 
+# Panel FruitAI (YAML, versionado en git): stock, salidas, ambiente y botones de prueba.
+lovelace:
+  dashboards:
+    fruitai-panel:
+      mode: yaml
+      title: FruitAI
+      icon: mdi:fruit-cherries
+      show_in_sidebar: true
+      filename: dashboards/fruitai.yaml
+
+# Controles para simular al ESP32 desde la interfaz (pruebas y demo sin hardware).
+input_select:
+  fruitai_fruta:
+    name: Fruta
+    icon: mdi:fruit-cherries
+    options: [manzana, pera, banano, kiwi]
+
+input_number:
+  fruitai_cantidad:
+    name: Cantidad
+    icon: mdi:counter
+    min: 1
+    max: 10
+    step: 1
+    mode: box
+
+# Publica en fruitai/movimiento lo mismo que publicaría el ESP32, así el
+# servicio lo trata igual (SQLite, stock, avisos). Solo para pruebas.
+script:
+  fruitai_simular_movimiento:
+    alias: Simular movimiento del ESP32
+    icon: mdi:swap-vertical
+    mode: queued
+    fields:
+      tipo:
+        description: entrada o salida
+        example: entrada
+    sequence:
+      - action: mqtt.publish
+        data:
+          topic: fruitai/movimiento
+          qos: 1
+          payload: >
+            {{ {"fruta": states('input_select.fruitai_fruta'),
+                "tipo": tipo,
+                "cantidad": states('input_number.fruitai_cantidad') | int(1),
+                "evento_id": "ha-" ~ (now().timestamp() * 1000) | int} | to_json }}
+
 # Respuestas de las oraciones locales (custom_sentences/es/fruitai.yaml).
 # Leen los sensores que publica el servicio: no calculan nada.
 intent_script:
@@ -24,6 +72,14 @@ intent_script:
         {% if n in ['unknown', 'unavailable'] %}No tengo el dato de salidas de {{ fruta }} en este momento.
         {% elif n | int(0) == 1 %}{{ cuando }} salió 1 {{ fruta }}.
         {% else %}{{ cuando }} salieron {{ n }} {{ fruta }}s.{% endif %}
+
+  FruitaiAmbiente:
+    speech:
+      text: >
+        {% set t = states('sensor.fruitai_temperatura_frutero') %}
+        {% set h = states('sensor.fruitai_humedad_frutero') %}
+        {% if t in ['unknown', 'unavailable'] %}No tengo la temperatura del frutero en este momento.
+        {% else %}El frutero está a {{ t }} °C con {{ h }} % de humedad.{% endif %}
 
   FruitaiInventario:
     speech:

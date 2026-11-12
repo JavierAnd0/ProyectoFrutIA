@@ -14,6 +14,13 @@ homeassistant/*
 !homeassistant/configuration.yaml
 !homeassistant/automations.yaml
 !homeassistant/custom_sentences/
+!homeassistant/dashboards/
 
 .DS_Store
 ~$*.docx
+
+# Firmware: credenciales locales
+firmware/**/secrets.h
+
+# Fotos del dataset (se suben a Edge Impulse, no a git)
+dataset/
