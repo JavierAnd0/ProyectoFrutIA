@@ -11,6 +11,8 @@ intents:
           - "[cuál es el|cual es el] (stock|inventario) de {fruta}"
           - "hay {fruta}"
           - "(me|nos) (quedan|queda) {fruta} [(cuántas|cuantas|cuántos|cuantos)]"
+          - "(quedan|queda) {fruta}"
+          - "(cuántas|cuantas|cuántos|cuantos) {fruta} (me|nos) (quedan|queda)"
   FruitaiSalidas:
     data:
       - sentences:
