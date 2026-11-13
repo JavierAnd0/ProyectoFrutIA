@@ -23,7 +23,7 @@ from pathlib import Path
 
 import cv2
 
-from camara import abrir_camara, recorte_central
+from camara import CAMARA_POR_DEFECTO, abrir_camara, listar_camaras, recorte_central
 
 RAIZ = Path(__file__).resolve().parent.parent
 CLASES = "manzana_roja,manzana_verde,pera,banano,kiwi,fondo"
@@ -32,11 +32,16 @@ CLASES = "manzana_roja,manzana_verde,pera,banano,kiwi,fondo"
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--clases", default=CLASES)
-    ap.add_argument("--camara", default="0", help="índice de cámara o ruta a un video")
+    ap.add_argument("--camara", default=CAMARA_POR_DEFECTO,
+                    help="índice de cámara o ruta a un video (o variable FRUITAI_CAMARA)")
+    ap.add_argument("--listar-camaras", action="store_true", help="ver qué número tiene cada cámara y salir")
     ap.add_argument("--salida", type=Path, default=RAIZ / "dataset")
     ap.add_argument("--lado", type=int, default=240, help="lado en píxeles de la foto guardada")
     ap.add_argument("--cada", type=float, default=0.4, help="segundos entre fotos en ráfaga")
     args = ap.parse_args()
+    if args.listar_camaras:
+        listar_camaras()
+        return
 
     clases = [c.strip() for c in args.clases.split(",") if c.strip()][:9]
     for c in clases:

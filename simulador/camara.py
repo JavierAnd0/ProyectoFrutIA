@@ -6,10 +6,56 @@ central de la webcam, que es lo que se marca en pantalla.
 """
 from __future__ import annotations
 
+import os
+import platform
+import subprocess
 from pathlib import Path
 
 import cv2
 import numpy as np
+
+
+# Cámara por defecto. En el Mac, si el iPhone aparece como cámara (Cámara de
+# Continuidad), la 0 puede ser el iPhone: fija la del Mac con
+#   export FRUITAI_CAMARA=1      (el número que muestre --listar-camaras)
+CAMARA_POR_DEFECTO = os.environ.get("FRUITAI_CAMARA", "0")
+
+
+def listar_camaras(maximo: int = 4) -> None:
+    """Muestra las cámaras disponibles: nombre (macOS) y una vista de cada índice.
+
+    OpenCV no da el nombre de cada índice, así que se abre cada uno, se muestra
+    un fotograma con su número y se reconoce a ojo cuál es la del Mac.
+    """
+    if platform.system() == "Darwin":
+        try:
+            info = subprocess.run(["system_profiler", "SPCameraDataType"],
+                                  capture_output=True, text=True, timeout=10).stdout
+            nombres = [l.strip().rstrip(":") for l in info.splitlines()
+                       if l.startswith("    ") and not l.startswith("      ") and l.strip().endswith(":")]
+            print("Cámaras conectadas:", ", ".join(nombres) or "ninguna")
+        except (OSError, subprocess.SubprocessError):
+            pass
+    encontradas = []
+    for i in range(maximo):
+        cap = cv2.VideoCapture(i)
+        ok, frame = cap.read() if cap.isOpened() else (False, None)
+        cap.release()
+        if not ok:
+            continue
+        h, w = frame.shape[:2]
+        encontradas.append(i)
+        print(f"  --camara {i}: {w}x{h}")
+        cv2.putText(frame, f"--camara {i}   (tecla para seguir)", (20, 50),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 255), 3)
+        cv2.imshow("FruitAI - camaras", frame)
+        cv2.waitKey(0)
+    if encontradas:
+        cv2.destroyAllWindows()
+    if not encontradas:
+        print("No se encontró ninguna cámara (¿permiso de cámara en macOS?).")
+    else:
+        print("Usa la del Mac con --camara N, o fíjala para siempre: export FRUITAI_CAMARA=N")
 
 
 def abrir_camara(fuente: str | int) -> cv2.VideoCapture:

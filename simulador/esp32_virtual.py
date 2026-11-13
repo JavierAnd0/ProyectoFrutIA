@@ -29,7 +29,7 @@ from pathlib import Path
 
 import cv2
 
-from camara import ClasificadorTFLite, abrir_camara, leer_etiquetas, recorte_central
+from camara import CAMARA_POR_DEFECTO, ClasificadorTFLite, abrir_camara, leer_etiquetas, listar_camaras, recorte_central
 from confirmacion import CONFIRMADA, REGISTRADA, Confirmador
 
 RAIZ = Path(__file__).resolve().parent.parent
@@ -96,7 +96,9 @@ def main() -> None:
     ap.add_argument("--modelo", type=Path, help=".tflite exportado de Edge Impulse")
     ap.add_argument("--etiquetas", type=Path, help="una clase por línea, en el orden del modelo")
     ap.add_argument("--clases", default=CLASES, help="clases del modo sin modelo")
-    ap.add_argument("--camara", default="0", help="índice de cámara o ruta a un video")
+    ap.add_argument("--camara", default=CAMARA_POR_DEFECTO,
+                    help="índice de cámara o ruta a un video (o variable FRUITAI_CAMARA)")
+    ap.add_argument("--listar-camaras", action="store_true", help="ver qué número tiene cada cámara y salir")
     ap.add_argument("--fps", type=float, default=5, help="inferencias por segundo (un ESP32-S3 hace ~5)")
     ap.add_argument("--umbral", type=float, default=0.75)
     ap.add_argument("--frames", type=int, default=5, help="fotogramas seguidos para confirmar")
@@ -104,6 +106,9 @@ def main() -> None:
     ap.add_argument("--port", type=int, default=1883)
     ap.add_argument("--sin-mqtt", action="store_true", help="no publicar, solo mostrar")
     args = ap.parse_args()
+    if args.listar_camaras:
+        listar_camaras()
+        return
 
     if args.modelo:
         etiquetas = leer_etiquetas(args.etiquetas or args.modelo.with_name("etiquetas.txt"))
