@@ -1,7 +1,7 @@
 """Toma una muestra de Fruits-360 y la agrega a dataset/ con las clases de FruitAI.
 
 Fruits-360 (Mihai Oltean, CC BY-SA 4.0): https://github.com/fruits-360/fruits-360-100x100
-Solo se descargan las carpetas de nuestras frutas (sparse checkout, ~85 MB):
+Solo se descargan las carpetas de nuestras frutas (sparse checkout, ~150 MB):
 
   git clone --depth 1 --filter=blob:none --sparse https://github.com/fruits-360/fruits-360-100x100.git /tmp/f360
   python scripts/preparar_fruits360.py --repo /tmp/f360 --imprimir-patrones | git -C /tmp/f360 sparse-checkout set --no-cone --stdin

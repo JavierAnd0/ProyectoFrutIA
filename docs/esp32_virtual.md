@@ -59,7 +59,7 @@ Fruits-360 aporta variedad (varias manzanas, peras y bananos); las fotos propias
 adaptan el modelo a la luz, el fondo y la cámara reales, y "fondo" solo puede salir
 del montaje. Variedades elegidas y excluidas: ver `scripts/preparar_fruits360.py`.
 
-Para regenerar la parte de Fruits-360 (descarga solo nuestras frutas, ~85 MB):
+Para regenerar la parte de Fruits-360 (descarga solo nuestras frutas, ~150 MB):
 
 ```bash
 git clone --depth 1 --filter=blob:none --sparse https://github.com/fruits-360/fruits-360-100x100.git /tmp/f360
