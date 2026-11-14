@@ -172,6 +172,14 @@ con TensorFlow Lite Micro. Se resuelve en el paso 6, junto con el reentrenamient
 
 ## 5. Armado de la estación
 
+![Estación de registro](hardware/estacion.png)
+
+![Conexiones del ESP32-S3](hardware/conexiones.png)
+
+![FruitAI en la casa](hardware/casa.png)
+
+(Ilustraciones esquemáticas; se regeneran con `python docs/hardware/<nombre>.py` desde `docs/hardware/`.)
+
 ```
         vista lateral                         vista frontal
    ┌──────────────────────┐              ┌──────────────────────┐
