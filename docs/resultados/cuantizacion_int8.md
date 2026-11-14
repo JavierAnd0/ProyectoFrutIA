@@ -136,3 +136,41 @@ el inventario es la misma fruta.
 Con las 750 fotos de Fruits-360 (int8 / float32): banano 98/98 %, kiwi 99/99 %,
 manzana como inventario 85–100 %, pera 76/90 %. La pera sigue siendo la clase débil:
 no tiene fotos propias y su variedad verde con pintas se confunde con kiwi en int8.
+
+## Modelo v3: corrección de datos (Edge Impulse)
+
+Revisando las fotos propias en Edge Impulse (por la API):
+
+- 3 manzanas verdes estaban etiquetadas como `manzana_roja` → reetiquetadas.
+- Las 34 fotos verdes de la segunda sesión estaban fuera del montaje (muy cerca, más
+  oscuras, sin cartulina) → deshabilitadas (siguen en el proyecto, no se usan).
+- La Granny Smith de Fruits-360 definía la clase: 150 fotos casi iguales → se dejaron 60.
+
+Resultado con las fotos propias del montaje: en **float32** la manzana verde pasa a 98 %
+y ninguna manzana se confunde con banano; en **int8** queda en 72 % (8 manzanas → banano).
+Los datos ya están bien: lo que se pierde es otra vez la cuantización.
+
+## Modelo v4: quantization-aware training (QAT)
+
+`scripts/entrenar_qat.py`: toma de Edge Impulse los mismos datos y el modelo Keras de v3,
+reentrena toda la red simulando int8 (TensorFlow Model Optimization) y exporta el int8.
+
+| | v3 int8 (Edge Impulse) | **v4 int8 (QAT)** |
+|---|---|---|
+| Set de prueba de Edge Impulse (172 fotos) | 86,6 % | **99,4 %** |
+| Manzana verde propia (montaje, 43) | 72 % | **100 %** |
+| Manzana roja propia (40) | 72 % | **98 %** |
+| Manzanas → banano | 8 | **0** |
+| Pera (Fruits-360) | 78 % | **100 %** |
+| Manzana verde fuera del montaje (34, no usadas al entrenar) | 21 % | 38 % |
+
+Por clase en el set de prueba (v4): banano 100 %, fondo 100 %, kiwi 100 %,
+manzana_roja 97 %, manzana_verde 100 %, pera 100 %.
+
+Límites: el set de prueba de Edge Impulse tiene fotos casi iguales a las de entrenamiento
+(Fruits-360 son una fruta girando; las propias, ráfagas), así que es optimista. La prueba
+que decide es en vivo con la cámara. Las fotos fuera del montaje siguen fallando: el
+modelo funciona en el montaje para el que se entrenó (alcance del documento).
+
+`modelos/fruitai.tflite` = v4 (QAT int8, 300 KB). `modelos/fruitai_f32.tflite` = float32
+de Edge Impulse (v3), como referencia.
