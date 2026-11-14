@@ -89,6 +89,20 @@ y ajustes: [firmware/fruitai_camara/README.md](firmware/fruitai_camara/README.md
 
 `fruitai/ambiente` (retain): `{"temperatura": 24.5, "humedad": 60}`
 
+Del ESP32 hacia Home Assistant (los crea el servicio con MQTT discovery):
+- `fruitai/esp32/estado` (retain, LWT): `online` / `offline` → sensor "ESP32 conectado".
+- `fruitai/esp32/deteccion` (retain):
+  `{"estado": "CONFIRMADA", "fruta": "pera", "confianza": 0.93, "ve": "pera", "ve_confianza": 0.91}`
+  → sensores "Fruta detectada" y "Estado detección".
+- `fruitai/esp32/foto` (opcional): JPEG de la cámara → cámara del panel. Las imágenes solo
+  salen del ESP32 si se activa (`PUBLICAR_FOTO 1` en el firmware; el virtual la manda salvo
+  `--sin-foto`). El reconocimiento siempre se hace en el ESP32.
+
+De Home Assistant hacia el ESP32:
+- `fruitai/esp32/boton`: `entrada` / `salida` (botones + / − del panel). El ESP32 aplica la
+  misma lógica anti-duplicados que con el botón físico; si la ignora, explica por qué en
+  `fruitai/aviso`.
+
 ## Base de datos
 
 `data/fruitai.db`. Ver contenido:

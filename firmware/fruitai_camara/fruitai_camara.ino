@@ -30,6 +30,10 @@
 #define USAR_PIR     1          // 0 = siempre activo (sin sensor de presencia)
 #define PRESENCIA_MS 15000      // la cámara sigue activa 15 s después del último movimiento
 
+#define PUBLICAR_FOTO 0         // 1 = manda ~1 foto/s a Home Assistant (para verla en el panel).
+                                // El reconocimiento sigue siendo en el ESP32; la foto es solo para mirar.
+#define PERIODO_FOTO_MS 1000
+
 #define USAR_DHT     0          // 1 = este mismo ESP32 publica temperatura y humedad
 #define TIPO_DHT     DHT22
 #define INTERVALO_DHT_MS 30000
@@ -108,6 +112,9 @@ const char* T_MOVIMIENTO = "fruitai/movimiento";
 const char* T_AMBIENTE   = "fruitai/ambiente";
 const char* T_ESTADO     = "fruitai/esp32/estado";   // online / offline (LWT)
 const char* T_AVISO      = "fruitai/aviso";          // rechazos del servicio
+const char* T_DETECCION  = "fruitai/esp32/deteccion"; // qué ve/confirma (sensor "Fruta detectada" en HA)
+const char* T_BOTON      = "fruitai/esp32/boton";     // botones + / − del panel de HA: entrada / salida
+const char* T_FOTO       = "fruitai/esp32/foto";      // JPEG para la cámara del panel (opcional)
 
 // La cámara entrega QVGA; el modelo usa el cuadrado central reescalado
 // (EI_CLASSIFIER_INPUT_WIDTH x HEIGHT, normalmente 96x96), igual que el
@@ -154,6 +161,12 @@ struct Boton {
 };
 Boton btnEntrada(PIN_BTN_ENTRADA), btnSalida(PIN_BTN_SALIDA);
 
+// Pulsación pendiente que llegó desde Home Assistant (se procesa en loop(), igual que un botón).
+static const char* botonRemoto = nullptr;
+// Última predicción, para informarla a HA.
+static const char* ultimaEtiqueta = "fondo";
+static float ultimaConfianza = 0.0f;
+
 // ---------- cámara ----------
 bool iniciarCamara() {
   camera_config_t c = {};
@@ -198,6 +211,17 @@ bool clasificar(const char** etiqueta, float* confianza, uint32_t* ms) {
   unsigned long t0 = millis();
   camera_fb_t* fb = esp_camera_fb_get();
   if (!fb) return false;
+#if PUBLICAR_FOTO
+  // La cámara ya entrega JPEG: se manda tal cual, sin copiarlo, por partes.
+  static unsigned long ultimaFoto = 0;
+  if (mqtt.connected() && millis() - ultimaFoto >= PERIODO_FOTO_MS) {
+    ultimaFoto = millis();
+    if (mqtt.beginPublish(T_FOTO, fb->len, false)) {
+      mqtt.write(fb->buf, fb->len);
+      mqtt.endPublish();
+    }
+  }
+#endif
   bool ok = fmt2rgb888(fb->buf, fb->len, PIXFORMAT_JPEG, imagen);
   esp_camera_fb_return(fb);
   if (!ok) return false;
@@ -231,6 +255,11 @@ void conectarWifi() {
 }
 
 void alRecibir(char* topico, byte* payload, unsigned int largo) {
+  if (strcmp(topico, T_BOTON) == 0) {
+    if (largo == 7 && memcmp(payload, "entrada", 7) == 0) botonRemoto = "entrada";
+    else if (largo == 6 && memcmp(payload, "salida", 6) == 0) botonRemoto = "salida";
+    return;
+  }
   if (strcmp(topico, T_AVISO) != 0) return;
   Serial.printf("Aviso del servicio: %.*s\n", (int)largo, (const char*)payload);
   parpadear(3, 80);   // p. ej. "salida de banano con stock 0"
@@ -246,6 +275,7 @@ void conectarMqtt() {
     Serial.println("OK");
     mqtt.publish(T_ESTADO, "online", true);
     mqtt.subscribe(T_AVISO, 1);
+    mqtt.subscribe(T_BOTON, 1);
   } else {
     // -2: no llega al broker (IP/red); 4 o 5: usuario o clave incorrectos
     Serial.printf("falló (estado %d)\n", mqtt.state());
@@ -331,17 +361,22 @@ void loop() {
   publicarAmbiente();
 #endif
 
-  // Botones: se leen en cada vuelta para no perder una pulsación corta.
+  // Botones: se leen en cada vuelta para no perder una pulsación corta. Los botones
+  // + / − del panel de Home Assistant llegan por MQTT y siguen el mismo camino.
   const char* tipo = btnEntrada.pulsado() ? "entrada" : (btnSalida.pulsado() ? "salida" : nullptr);
+  const bool desdeHA = !tipo && botonRemoto;
+  if (desdeHA) tipo = botonRemoto;
+  botonRemoto = nullptr;
   if (tipo) {
     Movimiento m = conf.boton(tipo);
-    Serial.println(conf.mensaje);
+    Serial.printf("%s%s\n", conf.mensaje, desdeHA ? "  [desde Home Assistant]" : "");
     if (m.valido) {
       encolarMovimiento(m);
       enviarPendientes();
       if (colaN) Serial.printf("Sin conexión: %d movimiento(s) en cola\n", colaN);
     } else {
       parpadear(2, 60);   // pulsación ignorada
+      if (desdeHA && mqtt.connected()) mqtt.publish(T_AVISO, conf.mensaje);   // que el celular sepa por qué
     }
   }
 
@@ -375,6 +410,8 @@ void loop() {
       return;
     }
     Estado antes = conf.estado;
+    ultimaEtiqueta = etiqueta;
+    ultimaConfianza = confianza;
     conf.procesar(etiqueta, confianza, true);
     if (conf.estado != antes) Serial.println(conf.mensaje);
 
@@ -383,6 +420,21 @@ void loop() {
       ultimoLog = millis();
       Serial.printf("ve: %s %.0f%% (%lu ms) | %s%s%s\n", etiqueta, confianza * 100, (unsigned long)ms,
                     nombreEstado(conf.estado), conf.fruta[0] ? " - " : "", conf.fruta);
+    }
+  }
+
+  // Estado para Home Assistant ("Fruta detectada"): al cambiar y cada 2 s.
+  static Estado estadoPublicado = (Estado)-1;
+  static unsigned long ultimaDeteccion = 0;
+  if (mqtt.connected() && (conf.estado != estadoPublicado || millis() - ultimaDeteccion >= 2000)) {
+    char p[200];
+    snprintf(p, sizeof(p),
+             "{\"estado\": \"%s\", \"fruta\": \"%s\", \"confianza\": %.2f, \"ve\": \"%s\", \"ve_confianza\": %.2f}",
+             nombreEstado(conf.estado), conf.fruta[0] ? conf.fruta : "ninguna", conf.confianza,
+             ultimaEtiqueta, ultimaConfianza);
+    if (mqtt.publish(T_DETECCION, p, true)) {
+      estadoPublicado = conf.estado;
+      ultimaDeteccion = millis();
     }
   }
 

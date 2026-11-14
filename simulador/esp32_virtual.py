@@ -12,6 +12,7 @@ Reproduce el ciclo completo del firmware:
 Teclas (equivalen al hardware):
   e / s   botón ENTRADA / SALIDA
   p       sensor de presencia on/off
+  (HA)    los botones "Registrar entrada / salida" del panel equivalen a e / s
   g       guardar lo que ve la cámara en capturas/ (para revisar fallos del modelo)
   1..9    (sin modelo) la cámara "ve" la clase n;  0 = fondo
   q       salir
@@ -37,6 +38,9 @@ RAIZ = Path(__file__).resolve().parent.parent
 T_MOVIMIENTO = "fruitai/movimiento"
 T_ESTADO = "fruitai/esp32/estado"
 T_AVISO = "fruitai/aviso"
+T_DETECCION = "fruitai/esp32/deteccion"   # lo que ve/confirma, para el sensor "Fruta detectada" de HA
+T_BOTON = "fruitai/esp32/boton"           # botones + / − del panel de HA → "entrada" / "salida"
+T_FOTO = "fruitai/esp32/foto"             # JPEG para la cámara del panel de HA
 CLASES = "manzana_roja,manzana_verde,pera,banano,kiwi,fondo"
 COLOR_LED = {CONFIRMADA: (0, 200, 0), REGISTRADA: (255, 120, 0)}   # BGR
 
@@ -53,6 +57,12 @@ def leer_env() -> dict[str, str]:
     return env
 
 
+def rotular(img, t: str, pos: tuple[int, int], escala: float, color: tuple[int, int, int]) -> None:
+    """Texto con borde negro: se lee también sobre el fondo blanco de la cartulina."""
+    cv2.putText(img, t, pos, cv2.FONT_HERSHEY_SIMPLEX, escala, (0, 0, 0), 5)
+    cv2.putText(img, t, pos, cv2.FONT_HERSHEY_SIMPLEX, escala, color, 2)
+
+
 def serial(texto: str) -> None:
     print(f"[{time.strftime('%H:%M:%S')}] {texto}", flush=True)
 
@@ -63,11 +73,12 @@ class Mqtt:
 
         env = leer_env()
         self.avisos: list[str] = []
+        self.comandos: list[str] = []   # "entrada"/"salida" desde Home Assistant
         self.c = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id=f"esp32-virtual-{uuid.uuid4().hex[:6]}")
         self.c.username_pw_set(env.get("MQTT_USUARIO_ESP32", "esp32"), env.get("MQTT_CLAVE_ESP32"))
         self.c.will_set(T_ESTADO, "offline", qos=1, retain=True)
         self.c.on_connect = self._conectado
-        self.c.on_message = lambda _c, _u, msg: self.avisos.append(msg.payload.decode(errors="replace"))
+        self.c.on_message = self._mensaje
         try:
             self.c.connect(host, port)
         except OSError as e:
@@ -81,10 +92,29 @@ class Mqtt:
             return
         serial("MQTT conectado")
         c.publish(T_ESTADO, "online", qos=1, retain=True)
-        c.subscribe(T_AVISO, qos=1)
+        c.subscribe([(T_AVISO, 1), (T_BOTON, 1)])
+
+    def _mensaje(self, _c, _u, msg) -> None:
+        texto = msg.payload.decode(errors="replace").strip()
+        if msg.topic == T_BOTON:
+            if texto in ("entrada", "salida"):
+                self.comandos.append(texto)
+        else:
+            self.avisos.append(texto)
 
     def publicar_movimiento(self, datos: dict) -> None:
         self.c.publish(T_MOVIMIENTO, json.dumps(datos, ensure_ascii=False), qos=1)
+
+    def publicar_deteccion(self, estado: str, fruta: str | None, confianza: float, ve: str, ve_conf: float) -> None:
+        datos = {"estado": estado, "fruta": fruta or "ninguna", "confianza": round(confianza, 2),
+                 "ve": ve, "ve_confianza": round(ve_conf, 2)}
+        self.c.publish(T_DETECCION, json.dumps(datos, ensure_ascii=False), qos=0, retain=True)
+
+    def publicar_foto(self, jpeg: bytes) -> None:
+        self.c.publish(T_FOTO, jpeg, qos=0)
+
+    def avisar(self, texto: str) -> None:
+        self.c.publish(T_AVISO, texto, qos=1)
 
     def cerrar(self) -> None:
         self.c.publish(T_ESTADO, "offline", qos=1, retain=True).wait_for_publish(2)
@@ -106,6 +136,7 @@ def main() -> None:
     ap.add_argument("--host", default="localhost")
     ap.add_argument("--port", type=int, default=1883)
     ap.add_argument("--sin-mqtt", action="store_true", help="no publicar, solo mostrar")
+    ap.add_argument("--sin-foto", action="store_true", help="no mandar la imagen a Home Assistant")
     args = ap.parse_args()
     if args.listar_camaras:
         listar_camaras()
@@ -132,11 +163,27 @@ def main() -> None:
     periodo, ultima_inf, ms_inf = 1.0 / args.fps, 0.0, 0.0
     top3: list[tuple[str, float]] = []
     estado_previo, mensaje, mensaje_hasta = conf.estado, "", 0.0
+    ultima_deteccion, ultima_foto, publicado = 0.0, 0.0, None
 
     def mostrar(texto: str, segundos: float = 3.0) -> None:
         nonlocal mensaje, mensaje_hasta
         mensaje, mensaje_hasta = texto, time.time() + segundos
         serial(texto)
+
+    def registrar(tipo: str, desde_ha: bool) -> None:
+        """Botón ENTRADA/SALIDA (teclado o panel de HA): misma lógica anti-duplicados."""
+        nonlocal estado_previo
+        mov = conf.boton(tipo)
+        mostrar(conf.mensaje + ("  [desde Home Assistant]" if desde_ha else ""))
+        estado_previo = conf.estado
+        if mov:
+            datos = {"fruta": mov.fruta, "tipo": mov.tipo, "cantidad": 1,
+                     "confianza": mov.confianza, "evento_id": f"virt-{uuid.uuid4().hex[:12]}"}
+            if mqtt:
+                mqtt.publicar_movimiento(datos)
+                serial(f"→ {T_MOVIMIENTO} {json.dumps(datos, ensure_ascii=False)}")
+        elif desde_ha and mqtt:
+            mqtt.avisar(conf.mensaje)   # que el celular sepa por qué no se registró
 
     try:
         while True:
@@ -167,16 +214,7 @@ def main() -> None:
             if tecla == ord("q"):
                 break
             if tecla in (ord("e"), ord("s")):
-                tipo = "entrada" if tecla == ord("e") else "salida"
-                mov = conf.boton(tipo)
-                mostrar(conf.mensaje)
-                estado_previo = conf.estado
-                if mov:
-                    datos = {"fruta": mov.fruta, "tipo": mov.tipo, "cantidad": 1,
-                             "confianza": mov.confianza, "evento_id": f"virt-{uuid.uuid4().hex[:12]}"}
-                    if mqtt:
-                        mqtt.publicar_movimiento(datos)
-                        serial(f"→ {T_MOVIMIENTO} {json.dumps(datos, ensure_ascii=False)}")
+                registrar("entrada" if tecla == ord("e") else "salida", desde_ha=False)
             elif tecla == ord("g"):
                 carpeta = RAIZ / "capturas"
                 carpeta.mkdir(exist_ok=True)
@@ -191,8 +229,16 @@ def main() -> None:
             elif not clasificador and ord("1") <= tecla <= ord("9") and tecla - ord("1") < len(clases_manual):
                 manual = clases_manual[tecla - ord("1")]
 
+            while mqtt and mqtt.comandos:
+                registrar(mqtt.comandos.pop(0), desde_ha=True)
             if mqtt and mqtt.avisos:
-                mostrar(f"Aviso del servicio: {mqtt.avisos.pop(0)}", 5)
+                mostrar(f"Aviso: {mqtt.avisos.pop(0)}", 5)
+
+            # ---- estado para Home Assistant: al cambiar y cada 2 s ----
+            actual = (conf.estado, conf.fruta)
+            if mqtt and (actual != publicado or ahora - ultima_deteccion >= 2):
+                mqtt.publicar_deteccion(conf.estado, conf.fruta, conf.confianza, etiqueta, confianza)
+                publicado, ultima_deteccion = actual, ahora
 
             # ---- pantalla ----
             vista = frame.copy()
@@ -207,12 +253,18 @@ def main() -> None:
             if top3:
                 lineas.append("Top 3: " + "  ".join(f"{k} {v:.0%}" for k, v in top3))
             for i, t in enumerate(lineas):
-                cv2.putText(vista, t, (10, 30 + 30 * i), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 255, 255), 2)
+                rotular(vista, t, (10, 30 + 30 * i), 0.75, (255, 255, 255))
             ayuda = "e entrada | s salida | p presencia | g guardar | q salir" + ("" if clasificador else " | 1-9/0 fruta")
-            cv2.putText(vista, ayuda, (10, vista.shape[0] - 15), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (200, 200, 200), 2)
+            rotular(vista, ayuda, (10, vista.shape[0] - 15), 0.6, (200, 200, 200))
             if ahora < mensaje_hasta:
-                cv2.putText(vista, mensaje, (10, vista.shape[0] - 50), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
+                rotular(vista, mensaje, (10, vista.shape[0] - 50), 0.7, (0, 255, 255))
             cv2.imshow("FruitAI - ESP32 virtual", vista)
+            if mqtt and not args.sin_foto and ahora - ultima_foto >= 1.0:   # ~1 foto/s a HA
+                ultima_foto = ahora
+                ok_jpg, jpg = cv2.imencode(".jpg", cv2.resize(vista, (480, int(480 * vista.shape[0] / vista.shape[1]))),
+                                           [cv2.IMWRITE_JPEG_QUALITY, 70])
+                if ok_jpg:
+                    mqtt.publicar_foto(jpg.tobytes())
     finally:
         cap.release()
         cv2.destroyAllWindows()

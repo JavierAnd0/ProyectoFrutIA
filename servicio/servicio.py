@@ -22,6 +22,9 @@ T_AMBIENTE = f"{P}/ambiente"
 T_AVISO = f"{P}/aviso"
 T_ESTADO = f"{P}/servicio/estado"
 T_ESP32_ESTADO = f"{P}/esp32/estado"   # online/offline que publica el ESP32 (con LWT)
+T_ESP32_DETECCION = f"{P}/esp32/deteccion"   # qué está viendo/confirmando el ESP32 (JSON, retain)
+T_ESP32_BOTON = f"{P}/esp32/boton"           # HA → ESP32: "entrada" / "salida" (botones del panel)
+T_ESP32_FOTO = f"{P}/esp32/foto"             # JPEG de la cámara (opcional), para verla en HA
 T_HA_ESTADO = "homeassistant/status"
 
 log = logging.getLogger("fruitai")
@@ -145,6 +148,46 @@ class Servicio:
             "device": dispositivo,
         }
         self.publicar("homeassistant/binary_sensor/fruitai_esp32_conectado/config", json.dumps(config), True)
+
+        # Registro desde Home Assistant con la fruta que reconoció el ESP32. Los botones solo
+        # mandan la orden: el ESP32 aplica la misma lógica anti-duplicados que con el botón
+        # físico (registra solo con una fruta confirmada y una vez hasta que se retire).
+        disponible = {"availability_topic": T_ESP32_ESTADO, "payload_available": "online",
+                      "payload_not_available": "offline"}
+        entidades = [
+            ("sensor", "fruta_detectada", {
+                "name": "Fruta detectada",
+                "state_topic": T_ESP32_DETECCION,
+                "value_template": "{{ value_json.fruta if value_json.estado != 'ESPERANDO' else 'ninguna' }}",
+                "json_attributes_topic": T_ESP32_DETECCION,
+                "icon": "mdi:eye",
+            }),
+            ("sensor", "estado_deteccion", {
+                "name": "Estado detección",
+                "state_topic": T_ESP32_DETECCION,
+                "value_template": "{{ value_json.estado }}",
+                "icon": "mdi:state-machine",
+            }),
+            ("button", "registrar_entrada", {
+                "name": "Registrar entrada",
+                "command_topic": T_ESP32_BOTON,
+                "payload_press": "entrada",
+                "icon": "mdi:plus-circle",
+            }),
+            ("button", "registrar_salida", {
+                "name": "Registrar salida",
+                "command_topic": T_ESP32_BOTON,
+                "payload_press": "salida",
+                "icon": "mdi:minus-circle",
+            }),
+            ("camera", "camara", {
+                "name": "Cámara",
+                "topic": T_ESP32_FOTO,
+            }),
+        ]
+        for tipo, clave, extra in entidades:
+            config = {"unique_id": f"fruitai_{clave}", "device": dispositivo, **disponible, **extra}
+            self.publicar(f"homeassistant/{tipo}/fruitai_{clave}/config", json.dumps(config), True)
 
     def _avisar(self, texto: str | None) -> None:
         if texto:

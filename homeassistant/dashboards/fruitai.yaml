@@ -4,6 +4,43 @@ views:
     path: inventario
     icon: mdi:fruit-cherries
     cards:
+      # Registro con la cámara: + / − registran la fruta que confirmó el ESP32 (misma lógica
+      # anti-duplicados que los botones físicos). La imagen solo llega si el ESP32 la manda.
+      - type: vertical-stack
+        cards:
+          - type: picture-entity
+            entity: camera.fruitai_camara
+            name: Cámara de la estación
+            show_state: false
+          - type: entities
+            entities:
+              - entity: sensor.fruitai_fruta_detectada
+                name: Fruta detectada
+              - entity: sensor.fruitai_estado_deteccion
+                name: Estado
+          - type: horizontal-stack
+            cards:
+              - type: button
+                entity: button.fruitai_registrar_entrada
+                name: Entrada
+                icon: mdi:plus-circle
+                show_state: false
+                tap_action:
+                  action: perform-action
+                  perform_action: button.press
+                  target:
+                    entity_id: button.fruitai_registrar_entrada
+              - type: button
+                entity: button.fruitai_registrar_salida
+                name: Salida
+                icon: mdi:minus-circle
+                show_state: false
+                tap_action:
+                  action: perform-action
+                  perform_action: button.press
+                  target:
+                    entity_id: button.fruitai_registrar_salida
+
       - type: glance
         title: Stock actual
         columns: 4
@@ -24,7 +61,7 @@ views:
       - type: vertical-stack
         cards:
           - type: entities
-            title: Simular movimiento (prueba sin ESP32)
+            title: Registro manual (elegir fruta, sin cámara)
             entities:
               - input_select.fruitai_fruta
               - input_number.fruitai_cantidad

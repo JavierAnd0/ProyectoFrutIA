@@ -78,8 +78,9 @@ servicio, SQLite, Home Assistant, Ollama → app del celular).]
 
 **Estación de registro (ESP32-S3).** Una caja con fondo blanco e iluminación fija donde la
 cámara observa la fruta desde arriba. Un sensor de presencia (PIR) activa la cámara cuando se
-acerca la mano. El modelo TinyML clasifica cada fotograma en el propio ESP32; ninguna imagen
-sale del dispositivo. Dos botones registran explícitamente una entrada o una salida, un LED
+acerca la mano. El modelo TinyML clasifica cada fotograma en el propio ESP32. Por defecto
+ninguna imagen sale del dispositivo; opcionalmente puede enviar una foto por segundo para ver
+la estación desde el panel, pero el reconocimiento se sigue haciendo en el ESP32. Dos botones registran explícitamente una entrada o una salida, un LED
 indica el estado y un sensor DHT22 mide la temperatura y la humedad del frutero.
 
 **Servidor (Raspberry Pi con Docker).** Cuatro contenedores:
@@ -101,6 +102,11 @@ indica el estado y un sensor DHT22 mide la temperatura y la humedad del frutero.
    veces). Si es una salida sin stock, la rechaza y publica un aviso en `fruitai/aviso`.
 4. El servicio publica el stock y los resúmenes (salidas de hoy y de la semana) con *retain*.
 5. Home Assistant crea los sensores automáticamente por *MQTT discovery* y actualiza el panel.
+
+El registro también puede hacerse desde el panel de Home Assistant: el ESP32 publica qué
+fruta tiene confirmada (sensor "Fruta detectada") y los botones Entrada / Salida del panel le
+envían la orden por MQTT. El ESP32 la trata igual que un botón físico, de modo que la lógica
+anti-duplicados se aplica en ambos casos.
 
 **Base de datos.** Tabla de frutas, tabla de movimientos (fruta, tipo, cantidad, confianza,
 fecha, `evento_id` único) y tabla de lecturas de ambiente. El stock no se guarda: se calcula

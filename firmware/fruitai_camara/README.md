@@ -95,6 +95,15 @@ Los milisegundos de `ve:` son la latencia de captura + inferencia en el ESP32
 Son los mismos parámetros que `--umbral` y `--frames` del ESP32 virtual: los
 valores que funcionaron allí son un buen punto de partida.
 
+## Registrar desde Home Assistant y ver la cámara
+
+- El panel FruitAI tiene **Entrada / Salida** que registran la fruta que confirmó el ESP32:
+  llegan por `fruitai/esp32/boton` y pasan por la misma lógica que los botones físicos. Si la
+  pulsación se ignora (sin fruta confirmada o ya registrada), el motivo llega al celular.
+- El ESP32 informa lo que ve en `fruitai/esp32/deteccion` (sensor "Fruta detectada").
+- `PUBLICAR_FOTO 1` manda ~1 foto por segundo (el JPEG de la cámara, unos 10 KB) para verla
+  en el panel. Por defecto está apagado: así ninguna imagen sale del ESP32.
+
 ## Si se cae la red
 
 PubSubClient publica con QoS 0. Para no perder un registro, cada movimiento se
