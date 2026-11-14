@@ -64,3 +64,22 @@ En Edge Impulse: **MobileNetV1 96x96 0.25**.
 Límites: la prueba local usa solo Fruits-360 (sin `fondo` ni fotos propias) y los pesos
 ImageNet de Keras, no los de Edge Impulse. Lo que se debe confirmar en Edge Impulse es
 que la diferencia float32 → int8 quede en unos pocos puntos.
+
+## Confirmación en Edge Impulse (dataset completo: Fruits-360 + fotos propias + fondo)
+
+MobileNetV1 96x96 0.25, sin capa densa final, dropout 0,1, 30 ciclos, lr 0,0005,
+data augmentation y auto-weight classes.
+
+| Clase | MobileNetV2 0,35 (int8) | MobileNetV1 0,25 (int8) |
+|---|---|---|
+| banano | 77–90 % | 96,8 % |
+| fondo | 64–93 % | 100 % |
+| kiwi | 8–32 % | 100 % |
+| manzana_roja | 100 % (recibía los errores) | 63,6 % |
+| manzana_verde | 26–74 % | 87,1 % |
+| pera | 68–79 % | 63,2 % |
+| **Total** | **63–72 %** | **84,3 %** (pérdida 0,35) |
+
+Desaparece el colapso hacia `manzana_roja`: los errores que quedan se reparten entre
+frutas parecidas (manzana roja ↔ manzana verde, pera ↔ manzanas), lo que apunta a
+datos y no a la cuantización.
