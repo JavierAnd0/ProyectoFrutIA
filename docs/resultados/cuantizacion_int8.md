@@ -174,3 +174,24 @@ modelo funciona en el montaje para el que se entrenó (alcance del documento).
 
 `modelos/fruitai.tflite` = v4 (QAT int8, 300 KB). `modelos/fruitai_f32.tflite` = float32
 de Edge Impulse (v3), como referencia.
+
+## Modelo v5: manzana verde en las posiciones reales de uso
+
+En vivo, v4 confundía la manzana verde con pera. Las 43 fotos verdes del montaje eran
+una ráfaga casi idéntica y el modelo las memorizó. Cambios en Edge Impulse:
+
+- +92 fotos nuevas de manzana verde, tomadas en las posiciones en que fallaba (de cerca,
+  girada, en distintas partes del cuadro): 74 a entrenamiento y 18 a prueba.
+- Se reactivaron las 34 fotos "de cerca" de la sesión 2: así se usa la cámara en la práctica.
+- Manzana verde: 169 propias + 60 de Fruits-360.
+
+Reentrenado en Edge Impulse (float32: 92,4 % en prueba) + QAT (`scripts/entrenar_qat.py`):
+
+| Grupo | v4 int8 | **v5 int8** |
+|---|---|---|
+| Set de prueba de Edge Impulse | 99,4 % | **99,5 %** |
+| Manzana verde nueva, **no usada al entrenar** (18) | 22 % (8 → pera) | **100 %** |
+| Manzana verde nueva, entrenamiento (74) | 19 % | 100 % |
+| Manzana verde de cerca, sesión 2 (34) | 38 % | 100 % |
+| Manzana roja propia (40) | 98 % | 95 % (2 → verde; para el inventario, 100 %) |
+| Banano, fondo, kiwi, pera | 100 % | 100 % |
