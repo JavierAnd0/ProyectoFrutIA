@@ -21,6 +21,7 @@ T_MOVIMIENTO = f"{P}/movimiento"
 T_AMBIENTE = f"{P}/ambiente"
 T_AVISO = f"{P}/aviso"
 T_ESTADO = f"{P}/servicio/estado"
+T_ESP32_ESTADO = f"{P}/esp32/estado"   # online/offline que publica el ESP32 (con LWT)
 T_HA_ESTADO = "homeassistant/status"
 
 log = logging.getLogger("fruitai")
@@ -131,6 +132,19 @@ class Servicio:
                 "device": dispositivo,
             }
             self.publicar(f"homeassistant/sensor/fruitai_ambiente_{clave}/config", json.dumps(config), True)
+
+        # Conexión del ESP32: lo publica el propio ESP32 (online al conectar; el broker
+        # publica offline por LWT si se desconecta sin avisar).
+        config = {
+            "name": "ESP32 conectado",
+            "unique_id": "fruitai_esp32_conectado",
+            "state_topic": T_ESP32_ESTADO,
+            "payload_on": "online",
+            "payload_off": "offline",
+            "device_class": "connectivity",
+            "device": dispositivo,
+        }
+        self.publicar("homeassistant/binary_sensor/fruitai_esp32_conectado/config", json.dumps(config), True)
 
     def _avisar(self, texto: str | None) -> None:
         if texto:

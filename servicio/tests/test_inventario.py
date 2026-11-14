@@ -127,5 +127,5 @@ def test_servicio_sobrevive_json_malo(srv):
 def test_discovery_crea_sensores_en_espanol(srv):
     srv.publicar_discovery()
     nombres = {json.loads(p)["name"] for t, p, _ in srv.publicados}
-    assert {"Stock manzana", "Salidas semana kiwi", "Temperatura frutero"} <= nombres
+    assert {"Stock manzana", "Salidas semana kiwi", "Temperatura frutero", "ESP32 conectado"} <= nombres
     assert all(r for _, _, r in srv.publicados)  # discovery siempre con retain

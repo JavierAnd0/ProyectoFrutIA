@@ -50,6 +50,8 @@ views:
       - type: glance
         title: Frutero
         entities:
+          - entity: binary_sensor.fruitai_esp32_conectado
+            name: ESP32
           - entity: sensor.fruitai_temperatura_frutero
             name: Temperatura
           - entity: sensor.fruitai_humedad_frutero
