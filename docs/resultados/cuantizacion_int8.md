@@ -124,3 +124,15 @@ Por variedad (int8), los fallos se concentran en:
 
 Ver `variedades_fruits360.png`. Conclusión: la manzana funciona como inventario; la
 clase débil es **pera**, que además no tiene fotos propias.
+
+## Modelo v2 (+~60 fotos propias de manzana verde)
+
+Misma configuración que v1 (MobileNetV1 0,25, 30 ciclos). Validación de Edge Impulse
+(int8): banano 96,8 %, fondo 100 %, kiwi 100 %, manzana_roja 66,7 % (v1: 63,6 %),
+**manzana_verde 90,3 %** (v1: 87,1 %), pera 57,9 % (v1: 63,2 %); ROC 0,99 (v1: 0,97).
+La manzana verde ya no se confunde con banano; sus errores van a manzana roja, que para
+el inventario es la misma fruta.
+
+Con las 750 fotos de Fruits-360 (int8 / float32): banano 98/98 %, kiwi 99/99 %,
+manzana como inventario 85–100 %, pera 76/90 %. La pera sigue siendo la clase débil:
+no tiene fotos propias y su variedad verde con pintas se confunde con kiwi en int8.
