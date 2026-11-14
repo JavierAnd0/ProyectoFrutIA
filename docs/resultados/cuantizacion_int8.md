@@ -80,6 +80,16 @@ data augmentation y auto-weight classes.
 | pera | 68–79 % | 63,2 % |
 | **Total** | **63–72 %** | **84,3 %** (pérdida 0,35) |
 
+MobileNetV1 0,25 en float32: **92,8 %** (pérdida 0,25). Por clase: banano 96,8 %, fondo
+100 %, kiwi 96 %, manzana_roja 84,8 %, manzana_verde 96,8 %, pera 84,2 %.
+
+Diferencia float32 → int8: 8,5 puntos (con MobileNetV2 era de 28–37). Casi toda en
+manzana_roja (84,8 → 63,6 %) y pera (84,2 → 63,2 %).
+
+Rendimiento estimado (EON Compiler, objetivo ESP-EYE / ESP32 de 240 MHz): 615 ms por
+inferencia, 135,4 KB de RAM y 296,7 KB de flash (con MobileNetV2: 946 ms, 228 KB y
+546 KB). Falta medirlo en el ESP32-S3, que acelera las operaciones int8.
+
 Desaparece el colapso hacia `manzana_roja`: los errores que quedan se reparten entre
 frutas parecidas (manzana roja ↔ manzana verde, pera ↔ manzanas), lo que apunta a
 datos y no a la cuantización.
