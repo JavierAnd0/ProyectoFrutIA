@@ -53,6 +53,30 @@ script:
                 "cantidad": states('input_number.fruitai_cantidad') | int(1),
                 "evento_id": "ha-" ~ (now().timestamp() * 1000) | int} | to_json }}
 
+  # Notificación push a todos los celulares con la app de Home Assistant (Companion).
+  # Cada celular registra una acción notify.mobile_app_<nombre>; aquí se recorren las
+  # entidades de la integración mobile_app para no tener que escribir el nombre a mano.
+  fruitai_notificar_celulares:
+    alias: Notificar a los celulares (FruitAI)
+    icon: mdi:cellphone-message
+    mode: queued
+    fields:
+      titulo:
+        example: FruitAI
+      mensaje:
+        example: Se acabaron los bananos
+    sequence:
+      - repeat:
+          for_each: >
+            {{ integration_entities('mobile_app') | select('match', 'device_tracker\\.')
+               | map('replace', 'device_tracker.', '') | list }}
+          sequence:
+            - action: "notify.mobile_app_{{ repeat.item }}"
+              continue_on_error: true
+              data:
+                title: "{{ titulo }}"
+                message: "{{ mensaje }}"
+
 # Respuestas de las oraciones locales (custom_sentences/es/fruitai.yaml).
 # Leen los sensores que publica el servicio: no calculan nada.
 intent_script:

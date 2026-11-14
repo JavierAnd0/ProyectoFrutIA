@@ -32,6 +32,8 @@ Home Assistant: http://localhost:8123 (o la IP del equipo).
    usuario/clave `MQTT_USUARIO_HA` / `MQTT_CLAVE_HA` del `.env`.
 3. Aparece el dispositivo **FruitAI** con los sensores "Stock manzana", "Salidas hoy banano", etc.
 
+Guía completa (materiales, estación, Raspberry Pi, app, agente y ESP32): [docs/puesta_en_marcha.md](docs/puesta_en_marcha.md).
+
 Respaldo y restauración en la Raspberry Pi (sin copiar la SD completa): [docs/restaurar.md](docs/restaurar.md).
 
 ## Simular el ESP32

@@ -1,6 +1,8 @@
 - id: fruitai_aviso
   alias: FruitAI - mostrar aviso del servicio
-  description: Muestra como notificación los avisos que publica el servicio (ej. salida rechazada).
+  description: >
+    Muestra los avisos que publica el servicio (ej. salida rechazada por stock 0)
+    dentro de HA y como notificación push en los celulares con la app de Home Assistant.
   triggers:
     - trigger: mqtt
       topic: fruitai/aviso
@@ -9,4 +11,31 @@
       data:
         title: FruitAI
         message: "{{ trigger.payload }}"
+    - action: script.fruitai_notificar_celulares
+      data:
+        titulo: FruitAI
+        mensaje: "{{ trigger.payload }}"
+  mode: queued
+
+- id: fruitai_agotada
+  alias: FruitAI - fruta agotada
+  description: Avisa al celular cuando el stock de una fruta llega a 0.
+  # Disparador de estado: solo se activa cuando el valor CAMBIA a 0 (no cada vez que el
+  # servicio republica el stock) y no al reiniciar HA (desde unknown/unavailable).
+  triggers:
+    - trigger: state
+      entity_id:
+        - sensor.fruitai_stock_manzana
+        - sensor.fruitai_stock_pera
+        - sensor.fruitai_stock_banano
+        - sensor.fruitai_stock_kiwi
+      to: "0"
+      not_from: ["unknown", "unavailable"]
+  actions:
+    - variables:
+        fruta: "{{ trigger.entity_id.split('_')[-1] }}"
+    - action: script.fruitai_notificar_celulares
+      data:
+        titulo: "FruitAI: no quedan {{ fruta }}s"
+        mensaje: "Se acabaron los {{ fruta }}s del inventario. Agrégalos a la lista de compras."
   mode: queued
