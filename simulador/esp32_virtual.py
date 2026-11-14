@@ -156,6 +156,7 @@ def main() -> None:
 
     conf = Confirmador(umbral=args.umbral, frames_confirmar=args.frames, frames_retiro=args.frames)
     cap = abrir_camara(args.camara)   # antes que MQTT: si no hay cámara, no se anuncia "online"
+    es_video, fallos = not str(args.camara).isdigit(), 0
     mqtt = None if args.sin_mqtt else Mqtt(args.host, args.port)
 
     presencia, manual = True, "fondo"
@@ -189,7 +190,17 @@ def main() -> None:
         while True:
             ok, frame = cap.read()
             if not ok:
-                break
+                # En el Mac la cámara a veces falla los primeros fotogramas al arrancar:
+                # se reintenta unos segundos antes de rendirse (un video, en cambio, terminó).
+                fallos += 1
+                if es_video or fallos > 100:
+                    if not es_video:
+                        serial("La cámara dejó de entregar imágenes. ¿La está usando otra app (FaceTime, Zoom, "
+                               "el navegador)? Ciérrala o prueba otra con --listar-camaras / --camara N.")
+                    break
+                time.sleep(0.05)
+                continue
+            fallos = 0
             cuadrado, (x, y, lado) = recorte_central(frame)
             ahora = time.time()
 
