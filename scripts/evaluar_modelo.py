@@ -26,6 +26,12 @@ import cv2
 RAIZ = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RAIZ / "simulador"))
 from camara import ClasificadorTFLite, leer_etiquetas  # noqa: E402
+from confirmacion import MAPA_POR_DEFECTO  # noqa: E402
+
+
+def a_fruta(clase: str) -> str:
+    """Fruta del inventario (manzana_roja y manzana_verde → manzana)."""
+    return MAPA_POR_DEFECTO.get(clase, clase)
 
 
 def main() -> None:
@@ -50,8 +56,8 @@ def main() -> None:
             print(f"{f.name:45} " + "  ".join(f"{k} {v:.0%}" for k, v in top))
         return
 
-    # origen → clase real → [aciertos, total, Counter(predicciones erradas), suma confianza]
-    res: dict = collections.defaultdict(lambda: collections.defaultdict(lambda: [0, 0, collections.Counter(), 0.0]))
+    # origen → clase real → [aciertos, total, Counter(predicciones erradas), suma confianza, aciertos inventario]
+    res: dict = collections.defaultdict(lambda: collections.defaultdict(lambda: [0, 0, collections.Counter(), 0.0, 0]))
     for carpeta in sorted(p for p in args.dataset.iterdir() if p.is_dir()):
         real = carpeta.name
         for f in sorted(carpeta.glob("*.jpg")):
@@ -60,6 +66,7 @@ def main() -> None:
             r = res[origen][real]
             r[1] += 1
             r[3] += conf
+            r[4] += a_fruta(pred) == a_fruta(real)
             if pred == real:
                 r[0] += 1
             else:
@@ -69,11 +76,12 @@ def main() -> None:
         if origen not in res:
             continue
         print(f"== Fotos {origen}")
-        print(f"   {'clase':14} {'fotos':>5} {'acierta':>8} {'conf. media':>11}   se confunde con")
-        for real, (ok, n, err, suma) in sorted(res[origen].items()):
+        print(f"   {'clase':14} {'fotos':>5} {'acierta':>8} {'inventario':>10} {'conf. media':>11}   se confunde con")
+        for real, (ok, n, err, suma, inv) in sorted(res[origen].items()):
             errores = ", ".join(f"{k} {v}" for k, v in err.most_common(3)) or "-"
-            print(f"   {real:14} {n:5} {ok / n:8.0%} {suma / n:11.0%}   {errores}")
+            print(f"   {real:14} {n:5} {ok / n:8.0%} {inv / n:10.0%} {suma / n:11.0%}   {errores}")
         print()
+    print("inventario = acierto contando manzana_roja y manzana_verde como 'manzana' (así se registra el stock).")
     print("Ojo: casi todas estas fotos se usaron para entrenar, así que el resultado es optimista.\n"
           "Si una clase falla aquí, el modelo ni siquiera aprendió sus propias fotos de entrenamiento.")
 
