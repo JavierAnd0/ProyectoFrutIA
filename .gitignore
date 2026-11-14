@@ -27,3 +27,6 @@ dataset/
 
 # Zip del dataset para pasarlo entre equipos (no va a git, igual que dataset/)
 fruits360_muestra.zip
+
+# Capturas del ESP32 virtual (tecla g) para revisar fallos del modelo
+capturas/

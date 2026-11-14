@@ -12,6 +12,7 @@ Reproduce el ciclo completo del firmware:
 Teclas (equivalen al hardware):
   e / s   botón ENTRADA / SALIDA
   p       sensor de presencia on/off
+  g       guardar lo que ve la cámara en capturas/ (para revisar fallos del modelo)
   1..9    (sin modelo) la cámara "ve" la clase n;  0 = fondo
   q       salir
 
@@ -129,6 +130,7 @@ def main() -> None:
     presencia, manual = True, "fondo"
     etiqueta, confianza = "fondo", 1.0
     periodo, ultima_inf, ms_inf = 1.0 / args.fps, 0.0, 0.0
+    top3: list[tuple[str, float]] = []
     estado_previo, mensaje, mensaje_hasta = conf.estado, "", 0.0
 
     def mostrar(texto: str, segundos: float = 3.0) -> None:
@@ -149,7 +151,8 @@ def main() -> None:
                 ultima_inf = ahora
                 t0 = time.perf_counter()
                 if clasificador:
-                    etiqueta, confianza, _ = clasificador.clasificar(cuadrado)
+                    etiqueta, confianza, probs = clasificador.clasificar(cuadrado)
+                    top3 = sorted(probs.items(), key=lambda kv: -kv[1])[:3]
                 else:
                     etiqueta = manual
                     confianza = 1.0 if manual == "fondo" else random.uniform(0.80, 0.97)
@@ -174,6 +177,12 @@ def main() -> None:
                     if mqtt:
                         mqtt.publicar_movimiento(datos)
                         serial(f"→ {T_MOVIMIENTO} {json.dumps(datos, ensure_ascii=False)}")
+            elif tecla == ord("g"):
+                carpeta = RAIZ / "capturas"
+                carpeta.mkdir(exist_ok=True)
+                ruta = carpeta / f"{time.strftime('%Y%m%d-%H%M%S')}_{etiqueta}_{confianza:.0%}.jpg".replace("%.jpg", ".jpg")
+                cv2.imwrite(str(ruta), cuadrado)
+                mostrar(f"Guardada {ruta.name}  (" + ", ".join(f"{k} {v:.0%}" for k, v in top3) + ")")
             elif tecla == ord("p"):
                 presencia = not presencia
                 mostrar(f"Presencia {'detectada' if presencia else 'NO detectada'}")
@@ -195,9 +204,11 @@ def main() -> None:
                 f"Estado: {conf.estado}" + (f" - {conf.fruta}" if conf.fruta else ""),
                 f"Presencia: {'si' if presencia else 'no'}   MQTT: {'si' if mqtt else 'no'}",
             ]
+            if top3:
+                lineas.append("Top 3: " + "  ".join(f"{k} {v:.0%}" for k, v in top3))
             for i, t in enumerate(lineas):
                 cv2.putText(vista, t, (10, 30 + 30 * i), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 255, 255), 2)
-            ayuda = "e entrada | s salida | p presencia | q salir" + ("" if clasificador else " | 1-9/0 fruta")
+            ayuda = "e entrada | s salida | p presencia | g guardar | q salir" + ("" if clasificador else " | 1-9/0 fruta")
             cv2.putText(vista, ayuda, (10, vista.shape[0] - 15), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (200, 200, 200), 2)
             if ahora < mensaje_hasta:
                 cv2.putText(vista, mensaje, (10, vista.shape[0] - 50), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
