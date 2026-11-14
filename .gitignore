@@ -24,3 +24,6 @@ firmware/**/secrets.h
 
 # Fotos del dataset (se suben a Edge Impulse, no a git)
 dataset/
+
+# Zip del dataset para pasarlo entre equipos (no va a git, igual que dataset/)
+fruits360_muestra.zip

@@ -34,6 +34,22 @@ La primera vez, macOS pide permiso de cámara para la app desde la que ejecutas 
 comando (Terminal, iTerm, VS Code…). Si no aparece: Ajustes del Sistema →
 Privacidad y seguridad → Cámara.
 
+### Si abre la cámara del iPhone en vez de la del Mac
+
+Con la **Cámara de Continuidad**, macOS ofrece el iPhone como cámara web y a veces
+queda como cámara 0. Al abrirla, el iPhone se "desconecta" y pasa a ser la cámara.
+
+```bash
+.venv/bin/python simulador/capturar_dataset.py --listar-camaras
+```
+
+Muestra una vista de cada cámara con su número (cualquier tecla pasa a la
+siguiente). Luego usa la del Mac, por ejemplo la 1, con `--camara 1`, o fíjala para
+toda la sesión de la terminal: `export FRUITAI_CAMARA=1`.
+
+Para que el iPhone no vuelva a aparecer: en el iPhone, **Ajustes → General →
+AirPlay y Continuidad → Cámara de Continuidad** (desactivar).
+
 ## 1. Probar el flujo sin modelo
 
 ```bash
@@ -59,7 +75,7 @@ Fruits-360 aporta variedad (varias manzanas, peras y bananos); las fotos propias
 adaptan el modelo a la luz, el fondo y la cámara reales, y "fondo" solo puede salir
 del montaje. Variedades elegidas y excluidas: ver `scripts/preparar_fruits360.py`.
 
-Para regenerar la parte de Fruits-360 (descarga solo nuestras frutas, ~85 MB):
+Para regenerar la parte de Fruits-360 (descarga solo nuestras frutas, ~150 MB):
 
 ```bash
 git clone --depth 1 --filter=blob:none --sparse https://github.com/fruits-360/fruits-360-100x100.git /tmp/f360

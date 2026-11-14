@@ -13,7 +13,8 @@ servicio/                Python: MQTT → SQLite → stock/resúmenes → HA (di
 simulador/               simula el ESP32 publicando los mismos mensajes MQTT
 homeassistant/           configuration.yaml y automations.yaml (el resto lo crea HA)
 scripts/                 utilidades (usuarios MQTT)
-firmware/                (pendiente) ESP32-S3
+firmware/fruitai_camara/  ESP32-S3: cámara + TinyML + botones + MQTT (firmware principal)
+firmware/esp32_ambiente/  ESP32: solo sensor DHT (prueba)
 bitacora.md              bitácora diaria
 ```
 
@@ -60,6 +61,16 @@ firmware. Ver [docs/esp32_virtual.md](docs/esp32_virtual.md).
 .venv/bin/pip install -r requirements-camara.txt
 .venv/bin/python simulador/capturar_dataset.py
 .venv/bin/python simulador/esp32_virtual.py --modelo modelos/fruitai.tflite
+```
+
+## Firmware del ESP32-S3
+
+`firmware/fruitai_camara/`: cámara → modelo de Edge Impulse → confirmación → botones →
+MQTT, con la misma lógica y los mismos mensajes que el ESP32 virtual. Conexiones, compilación
+y ajustes: [firmware/fruitai_camara/README.md](firmware/fruitai_camara/README.md).
+
+```bash
+./scripts/probar_firmware.sh        # pruebas de la lógica anti-duplicados en C++ (sin hardware)
 ```
 
 ## Contrato MQTT (lo que el firmware debe respetar)
