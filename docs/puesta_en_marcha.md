@@ -8,6 +8,10 @@ Orden recomendado (cada paso se prueba antes de seguir):
 1. Raspberry Pi (servidor) → 2. App de HA → 3. Agente de Ollama → 4. ESP32 en la mesa
 → 5. Estación armada → 6. Modelo con la cámara del ESP32 → 7. Prueba final.
 
+**Sin la Raspberry todavía:** todo se puede montar primero en el Mac (sección
+"Simular en el Mac y pasar a la Pi", al final) y luego copiarse a la Pi sin repetir
+la configuración.
+
 ---
 
 ## 0. Materiales
@@ -198,3 +202,40 @@ Con la estación armada (las fotos deben ser exactamente como las verá en uso):
 difíciles (pulsar dos veces, cambiar de fruta sin retirarla, salida con stock 0).
 Anotar por cada uno: fruta, tipo, si se registró bien y el tiempo hasta confirmar.
 Comparar con la tabla `movimientos` de SQLite (`./scripts/fruitai.sh db`).
+
+---
+
+## Simular en el Mac y pasar a la Pi
+
+El mismo `docker-compose.yml` corre en el Mac. Todo el estado (HA, base de datos,
+usuarios MQTT, claves) vive en la carpeta del proyecto, así que se configura una vez
+en el Mac y se copia a la Pi.
+
+### En el Mac
+```bash
+git pull origin claude/lucid-gauss-raw1x3
+docker compose --profile ollama up -d --build
+docker exec fruitai-ollama ollama pull qwen2.5:3b
+```
+- HA en `http://localhost:8123` (si ya estaba configurado: reiniciarlo para cargar las
+  automatizaciones nuevas). Seguir las secciones 1.4, 2 y 3 igual que en la Pi.
+- App del celular: `http://<IP del Mac>:8123` (`ipconfig getifaddr en0`), mismo Wi-Fi.
+- Flujo completo con el ESP32 virtual **con MQTT**:
+  `.venv/bin/python simulador/esp32_virtual.py --modelo modelos/fruitai.tflite`
+- `medir_agente.py` en el Mac sirve para revisar aciertos; los **tiempos** del documento
+  se miden en la Pi (Ollama en Docker en el Mac es mucho más lento).
+
+### Pasar a la Pi
+1. En la Pi: secciones 1.1–1.3 (sistema, IP fija, Docker, clonar), **sin** levantar aún.
+2. En el Mac:
+   ```bash
+   docker compose stop
+   rsync -av homeassistant data mosquitto .env <usuario>@raspberrypi.local:~/ProyectoFrutIA/
+   ```
+3. En la Pi:
+   ```bash
+   cd ~/ProyectoFrutIA && docker compose --profile ollama up -d --build
+   docker exec fruitai-ollama ollama pull qwen2.5:3b
+   ```
+4. Cambiar la dirección del Mac por la de la Pi en la **app** (Ajustes de la app →
+   Servidor) y en el **ESP32** (`MQTT_HOST` en `secrets.h`).
