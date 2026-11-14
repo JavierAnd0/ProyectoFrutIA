@@ -30,9 +30,9 @@
 #define USAR_PIR     1          // 0 = siempre activo (sin sensor de presencia)
 #define PRESENCIA_MS 15000      // la cámara sigue activa 15 s después del último movimiento
 
-#define PUBLICAR_FOTO 0         // 1 = manda ~1 foto/s a Home Assistant (para verla en el panel).
+#define PUBLICAR_FOTO 0         // 1 = manda fotos a Home Assistant (para verla en el panel).
                                 // El reconocimiento sigue siendo en el ESP32; la foto es solo para mirar.
-#define PERIODO_FOTO_MS 1000
+#define PERIODO_FOTO_MS 500    // 2 fotos/s (~20 KB/s por Wi-Fi)
 
 #define USAR_DHT     0          // 1 = este mismo ESP32 publica temperatura y humedad
 #define TIPO_DHT     DHT22

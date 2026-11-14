@@ -12,6 +12,9 @@ views:
             entity: camera.fruitai_camara
             name: Cámara de la estación
             show_state: false
+            # "live": muestra cada foto apenas llega. Sin esto la tarjeta pide una imagen
+            # nueva solo cada ~10 s y se ve muy atrasada.
+            camera_view: live
           - type: entities
             entities:
               - entity: sensor.fruitai_fruta_detectada

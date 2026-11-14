@@ -137,6 +137,7 @@ def main() -> None:
     ap.add_argument("--port", type=int, default=1883)
     ap.add_argument("--sin-mqtt", action="store_true", help="no publicar, solo mostrar")
     ap.add_argument("--sin-foto", action="store_true", help="no mandar la imagen a Home Assistant")
+    ap.add_argument("--fotos-por-segundo", type=float, default=2, help="imágenes por segundo a Home Assistant")
     args = ap.parse_args()
     if args.listar_camaras:
         listar_camaras()
@@ -270,7 +271,7 @@ def main() -> None:
             if ahora < mensaje_hasta:
                 rotular(vista, mensaje, (10, vista.shape[0] - 50), 0.7, (0, 255, 255))
             cv2.imshow("FruitAI - ESP32 virtual", vista)
-            if mqtt and not args.sin_foto and ahora - ultima_foto >= 1.0:   # ~1 foto/s a HA
+            if mqtt and not args.sin_foto and ahora - ultima_foto >= 1.0 / args.fotos_por_segundo:
                 ultima_foto = ahora
                 ok_jpg, jpg = cv2.imencode(".jpg", cv2.resize(vista, (480, int(480 * vista.shape[0] / vista.shape[1]))),
                                            [cv2.IMWRITE_JPEG_QUALITY, 70])

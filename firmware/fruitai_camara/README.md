@@ -101,7 +101,7 @@ valores que funcionaron allí son un buen punto de partida.
   llegan por `fruitai/esp32/boton` y pasan por la misma lógica que los botones físicos. Si la
   pulsación se ignora (sin fruta confirmada o ya registrada), el motivo llega al celular.
 - El ESP32 informa lo que ve en `fruitai/esp32/deteccion` (sensor "Fruta detectada").
-- `PUBLICAR_FOTO 1` manda ~1 foto por segundo (el JPEG de la cámara, unos 10 KB) para verla
+- `PUBLICAR_FOTO 1` manda 2 fotos por segundo (`PERIODO_FOTO_MS`) (el JPEG de la cámara, unos 10 KB) para verla
   en el panel. Por defecto está apagado: así ninguna imagen sale del ESP32.
 
 ## Si se cae la red
