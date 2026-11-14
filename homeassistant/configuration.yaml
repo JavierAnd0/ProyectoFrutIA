@@ -5,17 +5,9 @@ default_config:
 
 automation: !include automations.yaml
 
-# Acceso por HTTPS con Tailscale (`tailscale serve --bg 8123`): Tailscale reenvía las
-# peticiones a HA, y HA solo las acepta si confía en quien las reenvía. Son direcciones
-# internas: el propio equipo y las redes de Docker (en el Mac, Docker Desktop usa
-# 192.168.65.0/24; en Linux, 172.16.0.0/12).
-http:
-  use_x_forwarded_for: true
-  trusted_proxies:
-    - 127.0.0.1
-    - ::1
-    - 172.16.0.0/12
-    - 192.168.65.0/24
+# Acceso por HTTPS con Tailscale: la confianza en el proxy (X-Forwarded-For) ya no va
+# aquí. Desde HA 2026.x se configura en Ajustes → Sistema → Red (ver
+# docs/puesta_en_marcha.md, sección 2).
 
 # Panel FruitAI (YAML, versionado en git): stock, salidas, ambiente y botones de prueba.
 lovelace:

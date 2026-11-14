@@ -85,8 +85,24 @@ Qué llega al celular (`homeassistant/automations.yaml`):
 - **Aviso del servicio**: p. ej. "salida rechazada: no hay stock de kiwi".
 - **Fruta agotada**: cuando el stock de una fruta pasa a 0 (una vez, al cambiar).
 
-**Fuera de casa:** la app solo llega a la Pi dentro de tu Wi-Fi. Para usarla afuera:
-**Tailscale** (gratis: se instala en la Pi y en el celular) o **Nabu Casa** (de pago).
+**iPhone y HTTPS:** si el iPhone exige HTTPS (Modo de aislamiento o un perfil), no abre
+`http://...:8123` y la app dice "Could not connect to the server". Solución, que además
+sirve fuera de casa: **Tailscale**.
+
+1. Instalar Tailscale en el equipo de HA (Mac o Pi) y en el celular, con la misma cuenta.
+2. En `login.tailscale.com/admin/dns`: activar **MagicDNS** y **HTTPS Certificates**.
+3. En el equipo de HA: `tailscale serve --bg 8123` (la primera vez pide autorizar *Serve*
+   con un enlace). Da una dirección `https://<equipo>.<tailnet>.ts.net`.
+   En el Mac, el comando está en `/Applications/Tailscale.app/Contents/MacOS/Tailscale`.
+4. En HA → **Ajustes → Sistema → Red**:
+   - **URL de Home Assistant → Internet**: la dirección `https://...ts.net`.
+   - **Proxy inverso**: permitir `X-Forwarded-For` y agregar como proxies de confianza
+     `127.0.0.1`, `::1`, `172.16.0.0/12` (Docker en Linux) y `192.168.65.0/24` (Docker
+     Desktop en el Mac). Sin esto, HA responde *400: Bad Request* por Tailscale.
+     (Antes iba en `configuration.yaml` con `http:`; desde HA 2026.x es desde la interfaz.)
+5. En la app del celular: la dirección `https://...ts.net`.
+
+Alternativa de pago: **Nabu Casa**.
 
 ---
 
