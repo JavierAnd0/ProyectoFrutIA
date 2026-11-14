@@ -53,7 +53,9 @@ services:
     profiles: ["ollama"]          # no arranca salvo que se pida
     # 11435 afuera para no chocar con un Ollama instalado en el equipo.
     # HA llega por la red interna de Docker: http://ollama:11434
-    ports: ["11435:11434"]
+    # Solo en 127.0.0.1: Ollama no tiene contraseña, así que no se publica a la red
+    # (si no, cualquiera en el mismo Wi-Fi podría usarlo).
+    ports: ["127.0.0.1:11435:11434"]
     volumes:
       - ./ollama:/root/.ollama
     environment:
