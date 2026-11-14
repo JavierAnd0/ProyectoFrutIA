@@ -93,3 +93,34 @@ inferencia, 135,4 KB de RAM y 296,7 KB de flash (con MobileNetV2: 946 ms, 228 KB
 Desaparece el colapso hacia `manzana_roja`: los errores que quedan se reparten entre
 frutas parecidas (manzana roja ↔ manzana verde, pera ↔ manzanas), lo que apunta a
 datos y no a la cuantización.
+
+## Modelo v1 exportado (`modelos/`)
+
+`fruitai.tflite` (int8, 294 KB) y `fruitai_f32.tflite` (float32, 841 KB), MobileNetV1 0,25.
+Entrada 96×96×3; en int8, escala 1/255 y punto cero −128 (0–1 → int8, igual que
+`simulador/camara.py` y el firmware). Clases en `modelos/etiquetas.txt`.
+
+Evaluados con el código del ESP32 virtual sobre las 750 fotos de Fruits-360 (la mayoría
+estuvieron en el entrenamiento, así que el resultado es optimista):
+
+| Clase | int8 | float32 | int8 con confianza ≥ 0,75 |
+|---|---|---|---|
+| banano | 98 % | 98 % | 97 % |
+| kiwi | 99 % | 99 % | 93 % |
+| manzana_roja | 71 % | 78 % | 29 % |
+| manzana_verde | 100 % | 100 % | 97 % |
+| pera | 73 % | 90 % | 45 % |
+
+Como **inventario** (manzana roja y verde se registran como "manzana"): banano 98 %,
+kiwi 99 %, **manzana 93 %**, **pera 73 %** en int8 (90 % en float32).
+
+Por variedad (int8), los fallos se concentran en:
+
+- `apple_red_2` (32 %) y `apple_red_3` (55 %): manzanas bicolor rojo-amarillo y pálidas
+  (→ manzana verde o pera). `apple_braeburn_1` 52 %. Las rojas uniformes (Red Delicious,
+  Pink Lady, Crimson Snow) aciertan 81–100 %.
+- `pear_1` (30 %): pera verde con pintas, se confunde con kiwi (12 de 30). En float32
+  acierta 70 %: aquí sí pesa la cuantización.
+
+Ver `variedades_fruits360.png`. Conclusión: la manzana funciona como inventario; la
+clase débil es **pera**, que además no tiene fotos propias.

@@ -1,0 +1,6 @@
+banano
+fondo
+kiwi
+manzana_roja
+manzana_verde
+pera
