@@ -87,5 +87,47 @@
   6. El iPhone no abría `http://` (exige HTTPS) → Tailscale con `tailscale serve` (solo mis
      dispositivos). Home Assistant devolvía 400 por el proxy → modo TLS-terminated TCP.
   7. Ollama quedaba publicado sin contraseña en la red → ahora solo en `127.0.0.1`.
+  8. Medición del agente con el prompt nuevo y sin herramientas: Qwen 2.5 3B pasó de 0/10 y 28,6 s
+     a 18/18 (10 comunes + 8 abiertas) y 0,7 s (`docs/resultados/agente_20261114_1438.md`).
+  9. Registro desde Home Assistant: sensor "Fruta detectada" y botones Entrada / Salida que usan la
+     fruta reconocida por el ESP32, con la misma lógica anti-duplicados; cámara en el panel (casi en
+     vivo con `camera_view: live`). Sensor "ESP32 conectado".
+  10. Documento nuevo `FruitAI_documento.docx` (el original corregido + arquitectura, desarrollo,
+      pruebas y conclusiones, con diagramas).
 - Evidencia: [COMPLETAR: capturas de la matriz de confusión de cada versión, del ESP32 virtual
   reconociendo la manzana verde y de la app en el iPhone]
+
+
+---
+
+## Plantilla para los próximos días
+
+Copiar este bloque al final, una vez por día de trabajo.
+
+```markdown
+## Día N — <día> <fecha> 2026
+- Hice:
+- Problema / cómo lo resolví:
+- Evidencia: (captura, informe en docs/resultados/, commit)
+```
+
+## Evidencias por reunir
+
+Marcar con [x] cuando la captura esté guardada (por ejemplo en `docs/evidencias/`).
+
+- [ ] Día 1: [COMPLETAR qué se hizo]
+- [ ] Día 2: `simular_esp32.py escuchar` y la tabla `movimientos` (`./scripts/fruitai.sh db`)
+- [ ] Día 3: Assist respondiendo "¿cuántas peras hay?"
+- [ ] Día 8: ESP32 virtual confirmando una fruta y el panel FruitAI
+- [ ] Día 9: salida de `./scripts/probar_firmware.sh` (24/24)
+- [ ] Día 10: matrices de confusión de MobileNetV2 (v0) y del modelo final; ESP32 virtual con la
+      manzana verde; la app en el iPhone con el panel; Assist respondiendo una pregunta abierta;
+      notificación en el celular; registro con + / − desde el panel
+
+## Próximos hitos (cada uno será un día de la bitácora)
+
+- [ ] Prueba del modelo v5 como librería Arduino (Edge Impulse, modelo propio)
+- [ ] Raspberry Pi: copiar el sistema desde el Mac y medir el agente (Qwen 2.5 3B frente a 1.5B)
+- [ ] ESP32-S3: probar la cámara, cargar el firmware, armar la estación
+- [ ] Fotos con la cámara del ESP32, reentrenamiento y QAT
+- [ ] Prueba final de 20 movimientos reales (objetivo específico 6)
