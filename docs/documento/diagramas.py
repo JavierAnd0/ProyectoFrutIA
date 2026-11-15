@@ -19,9 +19,9 @@ def flecha(ax, a, b, texto="", dy=0.12, doble=False):
 
 # ---------- Arquitectura ----------
 fig, ax = plt.subplots(figsize=(10, 4.6)); ax.set_xlim(0, 10); ax.set_ylim(0, 4.6); ax.axis("off")
-caja(ax, 0.1, 1.3, 2.5, 2.35, "Estación (ESP32-S3)",
-     ["Cámara OV2640", "Modelo TinyML (int8)", "Lógica de confirmación", "Botones Entrada / Salida",
-      "PIR · LED · DHT22"], color="#eaf5ea", borde="#2e6b35")
+caja(ax, 0.1, 1.3, 2.5, 2.35, "ESP32-S3 con cámara",
+     ["Cámara OV2640", "Modelo TinyML (int8)", "Lógica de confirmación", "Cliente MQTT",
+      "Foto al panel"], color="#eaf5ea", borde="#2e6b35")
 ax.add_patch(FancyBboxPatch((3.55, 0.15), 3.3, 4.2, boxstyle="round,pad=0.02,rounding_size=0.08", fc="#f6f6f6", ec="#777", lw=1, ls="--"))
 ax.text(5.2, 4.3, "Raspberry Pi (Docker)", ha="center", va="top", fontsize=10.5, weight="bold", color="#333")
 caja(ax, 3.8, 3.0, 2.8, 0.85, "Mosquitto", ["broker MQTT con usuarios"])
@@ -49,11 +49,11 @@ for x, n, l, c in [(0.3, "ESPERANDO", "LED apagado", "#eeeeee"), (3.8, "CONFIRMA
 flecha(ax, (2.7, 1.78), (3.8, 1.78))
 ax.text(3.25, 2.4, "5 fotogramas seguidos\nmisma fruta, conf. ≥ 0,75", ha="center", fontsize=8, color="#333")
 flecha(ax, (6.2, 1.78), (7.3, 1.78))
-ax.text(6.75, 2.4, "botón Entrada / Salida\n→ 1 movimiento", ha="center", fontsize=8, color="#333")
+ax.text(6.75, 2.4, "Entrada / Salida en el panel\n→ 1 movimiento", ha="center", fontsize=8, color="#333")
 ax.add_patch(FancyArrowPatch((8.5, 1.3), (1.5, 1.3), connectionstyle="arc3,rad=-0.3", arrowstyle="-|>",
                              mutation_scale=12, lw=1.3, color="#444"))
 ax.text(5, 0.62, "fruta retirada: «fondo» durante 5 fotogramas", ha="center", fontsize=8.5, color="#333")
-ax.text(1.5, 2.55, "botón: ignorado", ha="center", fontsize=8.5, color="#8a1c1c")
+ax.text(1.5, 2.55, "Entrada/Salida: ignorado", ha="center", fontsize=8.5, color="#8a1c1c")
 ax.text(8.5, 2.55, "más pulsaciones: ignoradas", ha="center", fontsize=8.5, color="#8a1c1c")
 fig.tight_layout(); fig.savefig("estados.png", dpi=200); plt.close(fig)
 print("ok")

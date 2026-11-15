@@ -98,6 +98,20 @@
   reconociendo la manzana verde y de la app en el iPhone]
 
 
+
+## Día 11 — dom 15 nov 2026
+- Hice: decisión de alcance. Como todo se va a manejar desde Home Assistant y no hay sensores
+  ni recursos para la estación física, la versión actual queda en **Raspberry Pi + ESP32-S3 con
+  cámara**, operada desde el panel (cámara, "Fruta detectada" y botones Entrada / Salida). La
+  estación con caja y luz, los pulsadores, el PIR y el DHT22 pasan a mejoras futuras
+  (`docs/mejoras_futuras.md`), con su plano y conexiones para no perder ese trabajo. En el
+  firmware quedan programados pero desactivados (`USAR_BOTONES`, `USAR_PIR`, `USAR_DHT` en 0;
+  `PUBLICAR_FOTO` en 1). Documento, guía, panel y diagramas actualizados al nuevo alcance.
+- Problema / cómo lo resolví: sin DHT22 la tarjeta del frutero mostraba "desconocido" y la
+  medición del agente fallaba en la pregunta de temperatura → se quitó la tarjeta del panel y
+  `medir_agente.py` omite esa pregunta si no hay sensor.
+- Evidencia: diagrama de despliegue (`docs/hardware/despliegue.png`).
+
 ---
 
 ## Plantilla para los próximos días
@@ -128,6 +142,6 @@ Marcar con [x] cuando la captura esté guardada (por ejemplo en `docs/evidencias
 
 - [ ] Prueba del modelo v5 como librería Arduino (Edge Impulse, modelo propio)
 - [ ] Raspberry Pi: copiar el sistema desde el Mac y medir el agente (Qwen 2.5 3B frente a 1.5B)
-- [ ] ESP32-S3: probar la cámara, cargar el firmware, armar la estación
+- [ ] ESP32-S3: probar la cámara, cargar el firmware y fijarlo en su soporte
 - [ ] Fotos con la cámara del ESP32, reentrenamiento y QAT
-- [ ] Prueba final de 20 movimientos reales (objetivo específico 6)
+- [ ] Prueba final de 20 movimientos reales desde el panel de Home Assistant (objetivo específico 6)

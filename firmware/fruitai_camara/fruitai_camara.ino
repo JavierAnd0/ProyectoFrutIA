@@ -27,10 +27,14 @@
 #define FRAMES_RETIRO    5      // fotogramas de "fondo" para dar la fruta por retirada
 #define PERIODO_INF_MS   200    // una inferencia cada 200 ms = 5 inf/s como máximo
 
-#define USAR_PIR     1          // 0 = siempre activo (sin sensor de presencia)
+// Alcance actual: todo se opera desde Home Assistant (botones + / − del panel y la cámara
+// en el panel). Los periféricos de la estación física quedan como mejora futura
+// (docs/mejoras_futuras.md): se activan poniendo su opción en 1.
+#define USAR_BOTONES 0          // 1 = pulsadores físicos ENTRADA / SALIDA en la placa
+#define USAR_PIR     0          // 1 = sensor de presencia que activa la cámara (0 = siempre activa)
 #define PRESENCIA_MS 15000      // la cámara sigue activa 15 s después del último movimiento
 
-#define PUBLICAR_FOTO 0         // 1 = manda fotos a Home Assistant (para verla en el panel).
+#define PUBLICAR_FOTO 1         // 1 = manda fotos a Home Assistant (para verla en el panel).
                                 // El reconocimiento sigue siendo en el ESP32; la foto es solo para mirar.
 #define PERIODO_FOTO_MS 500    // 2 fotos/s (~20 KB/s por Wi-Fi)
 
@@ -159,7 +163,9 @@ struct Boton {
     return false;
   }
 };
+#if USAR_BOTONES
 Boton btnEntrada(PIN_BTN_ENTRADA), btnSalida(PIN_BTN_SALIDA);
+#endif
 
 // Pulsación pendiente que llegó desde Home Assistant (se procesa en loop(), igual que un botón).
 static const char* botonRemoto = nullptr;
@@ -326,8 +332,10 @@ void setup() {
   Serial.println("\n== FruitAI ESP32-S3: cámara + TinyML ==");
   pinMode(PIN_LED, OUTPUT);
   led(false);
+#if USAR_BOTONES
   pinMode(PIN_BTN_ENTRADA, INPUT_PULLUP);
   pinMode(PIN_BTN_SALIDA, INPUT_PULLUP);
+#endif
 #if USAR_PIR
   pinMode(PIN_PIR, INPUT);
 #endif
@@ -363,7 +371,11 @@ void loop() {
 
   // Botones: se leen en cada vuelta para no perder una pulsación corta. Los botones
   // + / − del panel de Home Assistant llegan por MQTT y siguen el mismo camino.
+#if USAR_BOTONES
   const char* tipo = btnEntrada.pulsado() ? "entrada" : (btnSalida.pulsado() ? "salida" : nullptr);
+#else
+  const char* tipo = nullptr;   // sin pulsadores: solo los botones del panel de Home Assistant
+#endif
   const bool desdeHA = !tipo && botonRemoto;
   if (desdeHA) tipo = botonRemoto;
   botonRemoto = nullptr;
@@ -385,8 +397,8 @@ void loop() {
   // se congela; NO cuenta como retiro, porque un PIR deja de ver una fruta
   // quieta y eso permitiría registrarla dos veces. El retiro lo decide la
   // cámara al ver "fondo".
-  static unsigned long ultimaPresencia = 0;
 #if USAR_PIR
+  static unsigned long ultimaPresencia = 0;
   if (digitalRead(PIN_PIR) == HIGH) ultimaPresencia = millis();
   const bool activa = ultimaPresencia && millis() - ultimaPresencia < PRESENCIA_MS;
 #else

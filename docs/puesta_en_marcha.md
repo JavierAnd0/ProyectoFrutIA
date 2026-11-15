@@ -21,13 +21,11 @@ la configuración.
 | Raspberry Pi | Pi 5 de 8 GB + fuente oficial de 27 W + disipador activo | Ollama usa mucha CPU y RAM |
 | Almacenamiento | SSD NVMe con adaptador (recomendado) o microSD de 64 GB clase A2 | El SSD acelera la carga del modelo y la base de datos de HA |
 | ESP32-S3 con cámara | Freenove ESP32-S3 WROOM CAM (N8R8 o N16R8) o Seeed XIAO ESP32S3 Sense | Debe tener **PSRAM**; el firmware soporta las dos |
-| Botones | 2 pulsadores (ENTRADA y SALIDA) | Mejor grandes, de panel |
-| Sensor de presencia | PIR AM312 (3,3 V, pequeño) o HC-SR501 | Opcional (`USAR_PIR 0` si no hay) |
-| Temperatura y humedad | DHT22 | Opcional en la misma placa (`USAR_DHT 1`) |
-| LED | El de la placa sirve; uno externo de 5 mm + resistencia de 220 Ω se ve mejor | |
-| Cables | Protoboard, jumpers macho-hembra, cable USB-C de datos | |
+| Cable | USB-C de datos (para cargar el firmware) | |
 | Alimentación ESP32 | Cargador USB de 5 V / 2 A | |
-| Estación | Caja (cartón grueso, MDF o plástico) con fondo blanco mate + tira LED USB blanca | La luz fija es lo que hace funcionar el modelo |
+| Soporte | Cualquier soporte que mantenga la cámara fija, mirando hacia abajo | Fondo claro y luz pareja |
+
+Botones físicos, PIR, DHT22 y la caja con luz: [mejoras futuras](mejoras_futuras.md).
 
 ---
 
@@ -152,16 +150,16 @@ Solo lo que no encaja ahí ("¿qué fruta se está acabando?") va a **Ollama**.
 
 ---
 
-## 4. ESP32-S3 en la mesa (antes de armar la estación)
+## 4. ESP32-S3 con cámara
 
-Probar por partes, con la placa sola en la protoboard:
+Probar por partes:
 
 1. **Placa y cámara**: Arduino IDE → ejemplo `CameraWebServer` con el modelo de placa
    correcto → abrir la IP en el navegador y ver imagen. Si esto falla, el resto también.
-2. **Sensor DHT** (opcional): `firmware/esp32_ambiente/` → en HA aparece la temperatura.
-3. **Firmware principal**: [firmware/fruitai_camara/README.md](../firmware/fruitai_camara/README.md)
+2. **Firmware principal**: [firmware/fruitai_camara/README.md](../firmware/fruitai_camara/README.md)
    (conexiones, librerías y compilación). En el monitor serie: `MQTT OK` y líneas `ve: ...`.
-4. Pulsar ENTRADA con una fruta confirmada → el stock cambia en la app.
+3. En el panel FruitAI: la cámara se ve, "ESP32 conectado" está activo y, con una fruta
+   delante, "Fruta detectada" la muestra. Pulsar **Entrada** → el stock cambia.
 
 **Pendiente — modelo en el firmware:** el firmware usa la librería Arduino que genera
 Edge Impulse. El modelo v5 (QAT) se entrenó fuera de Edge Impulse, así que hay que
@@ -170,49 +168,28 @@ con TensorFlow Lite Micro. Se resuelve en el paso 6, junto con el reentrenamient
 
 ---
 
-## 5. Armado de la estación
+## 5. Ubicación de la cámara
 
-![Plano de la estación](hardware/plano_estacion.png)
+En el alcance actual no hay estación física: el ESP32-S3 va fijo en un soporte, mirando
+hacia abajo a una superficie de fondo claro y uniforme, a unos 25–30 cm, con luz pareja que
+no dependa de la ventana. Lo importante es que **la cámara y la luz no se muevan** entre la
+captura de las fotos de entrenamiento y el uso. Se alimenta con un cargador USB de 5 V / 2 A.
 
-![Conexiones del ESP32-S3](hardware/conexiones.png)
+Todo se opera desde Home Assistant (panel FruitAI): la cámara, "Fruta detectada" y los
+botones **Entrada / Salida**.
 
 ![Diagrama de despliegue](hardware/despliegue.png)
 
-(Se regeneran con `python plano.py`, `python conexiones.py` y `python despliegue.py` desde `docs/hardware/`.)
-
-```
-        vista lateral                         vista frontal
-   ┌──────────────────────┐              ┌──────────────────────┐
-   │   [ESP32 + cámara]   │ ← techo,     │   tira LED (arriba)  │
-   │        │  ▼          │   mirando    │                      │
-   │   tira LED           │   hacia      │     zona de la       │
-   │        ▼             │   abajo      │       fruta          │
-   │   ┌──────────┐       │              │   (fondo blanco)     │
-   │   │  fruta   │  ← PIR│              ├──────────────────────┤
-   │───┴──────────┴───────│              │ (ENTRADA) LED (SALIDA)│
-   └──────────────────────┘              └──────────────────────┘
-```
-
-- **Caja abierta por delante**, unos 30 × 30 × 30 cm. Base y paredes **blanco mate**
-  (cartulina o pintura), sin brillos.
-- **Cámara en el techo** mirando hacia abajo, a 25–30 cm de la base, siempre en el
-  mismo lugar (fijarla con tornillos o cinta doble faz fuerte). La fruta debe llenar
-  buena parte del cuadro.
-- **Tira LED** en el techo, junto a la cámara: luz pareja y siempre igual. Es lo que
-  más influye en el modelo; que no dependa de la ventana.
-- **Panel frontal** con ENTRADA (izquierda), SALIDA (derecha) y el LED en el medio, a la vista.
-- **PIR** en el borde delantero, apuntando hacia donde entra la mano.
-- **DHT22** junto al frutero (no dentro de la caja, que se calienta con la luz),
-  con un cable largo hasta la placa.
-- **Alimentación**: el ESP32 y la tira LED con un cargador USB de 5 V / 2 A.
+La estación completa (caja con luz, pulsadores, PIR y DHT22, con plano y conexiones) quedó
+como mejora futura: [mejoras_futuras.md](mejoras_futuras.md).
 
 ---
 
 ## 6. Modelo con la cámara del ESP32
 
-Con la estación armada (las fotos deben ser exactamente como las verá en uso):
+Con la cámara ya en su lugar (las fotos deben ser exactamente como las verá en uso):
 
-1. Capturar con la cámara del ESP32 en la estación: 40–60 fotos por fruta (varias
+1. Capturar con la cámara del ESP32, en su ubicación definitiva: 40–60 fotos por fruta (varias
    frutas de cada tipo, distintas posiciones, con y sin mano, de día y de noche) y
    ~100 de fondo (vacía, mano sola, sombras).
 2. Subirlas a Edge Impulse, reentrenar y aplicar QAT (`scripts/entrenar_qat.py`).
@@ -223,7 +200,8 @@ Con la estación armada (las fotos deben ser exactamente como las verá en uso):
 ## 7. Prueba final (objetivo específico 6)
 
 20 movimientos reales mezclando frutas, entradas y salidas, incluyendo los casos
-difíciles (pulsar dos veces, cambiar de fruta sin retirarla, salida con stock 0).
+difíciles (pulsar Entrada dos veces en el panel, cambiar de fruta sin retirarla, salida
+con stock 0).
 Anotar por cada uno: fruta, tipo, si se registró bien y el tiempo hasta confirmar.
 Comparar con la tabla `movimientos` de SQLite (`./scripts/fruitai.sh db`).
 

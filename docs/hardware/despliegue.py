@@ -35,17 +35,18 @@ def enlace(p, q, texto=None, pos=0.5, off=(0, 2.5), ha="center", estilo="-"):
 # ---------------- ESP32-S3 ----------------
 nodo(8, 40, 66, 82, "dispositivo", "ESP32-S3")
 componente(13, 72, 56, 34, "firmware", "fruitai_camara",
-           ["modelo TinyML int8 (300 KB)", "lógica de confirmación", "cola de movimientos", "cliente MQTT"])
+           ["modelo TinyML int8 (300 KB)", "lógica de confirmación", "cliente MQTT", "foto al panel (~2/s)"])
 ax.text(13, 61, "Periféricos:", fontsize=6.8, weight="bold")
-for i, l in enumerate(["cámara OV2640", "pulsadores ENTRADA / SALIDA", "PIR AM312 · LED", "DHT22"]):
+for i, l in enumerate(["cámara OV2640", "LED de la placa"]):
     ax.text(15, 56.5 - i * 4.2, "· " + l, fontsize=6.6)
+ax.text(13, 44, "Mejora futura: pulsadores,\nPIR y DHT22 (ver docs).", fontsize=6.3, color=G, style="italic")
 
 # ---------------- Raspberry Pi 5 ----------------
 nodo(102, 12, 112, 128, "dispositivo", "Raspberry Pi 5")
 ax.text(158, 125, "«entorno de ejecución» Docker", ha="center", fontsize=6.8, color=G)
 ax.add_patch(Rectangle((106, 16), 104, 105, fill=False, ec=G, lw=.6, ls=(0, (4, 2))))
 componente(110, 92, 44, 24, "contenedor", "Mosquitto", ["broker MQTT", "usuario por cliente"])
-componente(162, 92, 44, 24, "contenedor", "Home Assistant", ["panel · avisos · Assist", "registro + / −"])
+componente(162, 92, 44, 24, "contenedor", "Home Assistant", ["panel, cámara, avisos", "registro + / −, Assist"])
 componente(110, 56, 44, 26, "contenedor", "servicio", ["valida y guarda", "calcula stock y resúmenes"])
 componente(162, 56, 44, 26, "contenedor", "Ollama", ["Qwen 2.5 3B", "solo 127.0.0.1"])
 componente(110, 21, 44, 25, "artefacto", "fruitai.db", ["SQLite: movimientos,", "ambiente"])

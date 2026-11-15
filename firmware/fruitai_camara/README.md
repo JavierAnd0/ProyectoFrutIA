@@ -1,7 +1,7 @@
 # Firmware principal: ESP32-S3 con cámara
 
 ```
-cámara OV2640 ─► modelo TinyML (Edge Impulse) ─► confirmación anti-duplicados ─► botón E/S ─► MQTT ─► Pi
+cámara OV2640 ─► modelo TinyML ─► confirmación anti-duplicados ─► Entrada/Salida (panel de HA) ─► MQTT ─► Pi
 ```
 
 Hace lo mismo que `simulador/esp32_virtual.py` y publica los mismos mensajes
@@ -11,10 +11,27 @@ SQLite y Home Assistant no cambian.
 
 | Archivo | Qué es |
 |---|---|
-| `fruitai_camara.ino` | cámara, inferencia, botones, PIR, LED, Wi-Fi y MQTT |
+| `fruitai_camara.ino` | cámara, inferencia, LED, Wi-Fi y MQTT (pulsadores, PIR y DHT22 opcionales) |
 | `confirmacion.h` | lógica anti-duplicados, traducida línea por línea de `simulador/confirmacion.py` |
 | `test/test_confirmacion.cpp` | las mismas pruebas que la versión Python, se corren en el PC |
 | `secrets.h.example` | plantilla de Wi-Fi y MQTT (copiar como `secrets.h`, no va a git) |
+
+
+## Alcance actual: solo el ESP32 con cámara
+
+Por ahora no hay estación física: el ESP32-S3 solo necesita la cámara y el cable USB, y
+**todo se opera desde Home Assistant** (la cámara en el panel, "Fruta detectada" y los
+botones Entrada / Salida). Configuración por defecto del `.ino`:
+
+| Opción | Valor | Significado |
+|---|---|---|
+| `PUBLICAR_FOTO` | 1 | manda ~2 fotos/s al panel de HA |
+| `USAR_BOTONES` | 0 | sin pulsadores físicos |
+| `USAR_PIR` | 0 | cámara siempre activa |
+| `USAR_DHT` | 0 | sin sensor de ambiente |
+
+Las secciones de conexiones y sensor de presencia de abajo son para la **estación física**,
+que quedó como mejora futura ([docs/mejoras_futuras.md](../../docs/mejoras_futuras.md)).
 
 ## Placas soportadas
 
@@ -25,7 +42,7 @@ Se elige con un `#define` al inicio del `.ino`:
 
 Otra placa: copiar sus pines de cámara del ejemplo `CameraWebServer` (`camera_pins.h`).
 
-## Conexiones
+## Conexiones (estación física, mejora futura)
 
 | Pieza | Freenove S3 | XIAO S3 Sense | Notas |
 |---|---|---|---|
@@ -40,7 +57,7 @@ LED: **apagado** = esperando fruta · **fijo** = fruta confirmada, pulsa un bot�
 **3 destellos** = el servicio rechazó el movimiento (p. ej. salida con stock 0) ·
 **parpadeo de 1 s sin parar** = falla la cámara o la PSRAM.
 
-## Sensor de presencia
+## Sensor de presencia (mejora futura)
 
 El PIR solo **activa** la cámara (el plan: "sensor de presencia para activar la
 detección"). Sin movimiento durante `PRESENCIA_MS` (15 s) la cámara descansa y el

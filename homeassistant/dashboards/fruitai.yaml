@@ -88,14 +88,11 @@ views:
                     tipo: salida
 
       - type: glance
-        title: Frutero
+        title: Dispositivo
         entities:
           - entity: binary_sensor.fruitai_esp32_conectado
             name: ESP32
-          - entity: sensor.fruitai_temperatura_frutero
-            name: Temperatura
-          - entity: sensor.fruitai_humedad_frutero
-            name: Humedad
+          # Temperatura y humedad del frutero (DHT22): mejora futura, ver docs/mejoras_futuras.md
 
       - type: entities
         title: Salidas
@@ -120,12 +117,3 @@ views:
             name: Banano
           - entity: sensor.fruitai_salidas_semana_kiwi
             name: Kiwi
-
-      - type: history-graph
-        title: Ambiente últimas 24 h
-        hours_to_show: 24
-        entities:
-          - entity: sensor.fruitai_temperatura_frutero
-            name: Temperatura
-          - entity: sensor.fruitai_humedad_frutero
-            name: Humedad

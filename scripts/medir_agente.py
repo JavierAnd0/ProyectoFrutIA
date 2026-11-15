@@ -177,6 +177,11 @@ def main() -> None:
         tiempos, aciertos, total = [], 0, 0
         aciertos_tipo = {False: [0, 0], True: [0, 0]}
         for pregunta, calcular, abierta in PREGUNTAS:
+            # Sin sensor de ambiente (DHT22, mejora futura) no hay respuesta correcta que medir.
+            if "temperatura" in pregunta.lower() and ha.estados().get(
+                    "sensor.fruitai_temperatura_frutero", "unknown") in ("unknown", "unavailable"):
+                print(f"  (omitida: {pregunta} — no hay sensor de temperatura)")
+                continue
             for i in range(args.repeticiones):
                 tipo, valores = calcular(ha.estados())
                 esperado = " o ".join(valores)

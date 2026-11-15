@@ -127,8 +127,8 @@ c.push(H1("4. Alcance y limitaciones"));
 c.push(ETQ("Incluido en el alcance:"));
 for (const t of [
   "Clasificación de manzanas (rojas y verdes), peras, bananos y kiwis, más una clase «fondo», una fruta a la vez.",
-  "Registro de entradas y salidas confirmadas por el usuario mediante botones: físicos en la estación o desde el panel de Home Assistant.",
-  "Sensor de presencia para activar la detección y sensor de temperatura y humedad para las condiciones de conservación.",
+  "Registro explícito de entradas y salidas desde el panel de Home Assistant (botones Entrada y Salida), con la fruta reconocida por la cámara.",
+  "Visualización de la cámara del ESP32-S3 en el panel.",
   "Inventario y panel en Home Assistant, con acceso desde la aplicación móvil.",
   "Base de datos SQLite con el historial de movimientos.",
   "Agente conversacional local (Ollama + Assist) para consultas de inventario e historial.",
@@ -139,10 +139,11 @@ for (const t of [
   "Detección de madurez o daño en la fruta.",
   "Reconocimiento de varias frutas simultáneamente.",
   "Uso en condiciones de iluminación no controladas.",
+  "Estación física con pulsadores, sensor de presencia y sensor de temperatura y humedad: quedó diseñada y programada, pero se deja como mejora futura (sección 9.1).",
 ]) c.push(VIN(t));
 c.push(ETQ("Limitaciones:"));
 for (const t of [
-  "Tiempo de desarrollo.",
+  "Tiempo de desarrollo y disponibilidad de sensores: la versión actual usa solo la Raspberry Pi y el ESP32-S3 con cámara.",
   "Conjunto de datos: pocas fotos propias por clase; la pera y el kiwi solo cuentan con imágenes de Fruits-360.",
   "El modelo funciona en el montaje para el que se entrenó (fondo y luz fijos).",
   "El agente de IA local depende de que el equipo esté encendido.",
@@ -166,10 +167,10 @@ c.push(def("SQLite", "Base de datos relacional contenida en un solo archivo, sin
 
 // ---------- 6. Arquitectura ----------
 c.push(H1("6. Arquitectura del sistema"));
-c.push(P("FruitAI se compone de tres partes: una estación de registro con el ESP32-S3, un servidor en la Raspberry Pi y la aplicación de Home Assistant en el celular (Figura 1)."));
+c.push(P("FruitAI se compone de tres partes: el ESP32-S3 con cámara, un servidor en la Raspberry Pi y la aplicación de Home Assistant en el celular, desde donde se opera todo el sistema (Figura 1)."));
 c.push(...figura("arquitectura.png", 600, 276, "Arquitectura de FruitAI."));
-c.push(H2("6.1 Estación de registro (ESP32-S3)"));
-c.push(P("Una caja con fondo blanco e iluminación fija donde la cámara observa la fruta desde arriba. Un sensor de presencia (PIR) activa la cámara cuando se acerca la mano. El modelo TinyML clasifica cada fotograma en el propio ESP32. Por defecto ninguna imagen sale del dispositivo; opcionalmente puede enviar una foto por segundo para ver la estación desde el panel, pero el reconocimiento se sigue haciendo en el ESP32. Dos botones registran explícitamente una entrada o una salida, un LED indica el estado y un sensor DHT22 mide la temperatura y la humedad del frutero."));
+c.push(H2("6.1 ESP32-S3 con cámara"));
+c.push(P("El ESP32-S3 va fijo, mirando hacia abajo a una superficie de fondo claro y con luz pareja. El modelo TinyML clasifica cada fotograma en el propio ESP32 y la lógica de confirmación decide cuándo una fruta está confirmada. El ESP32 informa a Home Assistant qué fruta tiene confirmada y envía unas dos fotos por segundo para ver la cámara en el panel; el reconocimiento se hace siempre en el ESP32. El envío de fotos se puede desactivar, y entonces ninguna imagen sale del dispositivo."));
 c.push(H2("6.2 Servidor (Raspberry Pi con Docker)"));
 c.push(...tabla("Contenedores del servidor.", ["Contenedor", "Función"], [
   ["Mosquitto", "Broker MQTT; un usuario y contraseña por cliente (ESP32, servicio, Home Assistant)."],
@@ -177,15 +178,17 @@ c.push(...tabla("Contenedores del servidor.", ["Contenedor", "Función"], [
   ["Home Assistant", "Panel, notificaciones, registro desde el panel y asistente Assist."],
   ["Ollama", "Modelo de lenguaje local para las preguntas abiertas."],
 ], [2400, 6960]));
+c.push(P("La Figura 2 muestra qué se ejecuta en cada equipo y por qué protocolo se comunican."));
+c.push(...figura("despliegue.png", 600, 318, "Diagrama de despliegue (nodos, contenedores y protocolos)."));
 c.push(H2("6.3 Flujo de un registro"));
 for (const t of [
-  "El ESP32 confirma la fruta (sección 7.2) y el usuario pulsa Entrada.",
+  "El ESP32 confirma la fruta (sección 7.2) y la muestra en el panel como «Fruta detectada». El usuario pulsa Entrada en el panel y Home Assistant envía la orden al ESP32 por MQTT.",
   "El ESP32 publica en el tópico `fruitai/movimiento` un mensaje JSON con la fruta, el tipo, la cantidad, la confianza y un identificador único del evento (`evento_id`).",
   "El servicio valida el mensaje, lo guarda en SQLite con la hora de recepción y recalcula el stock. Si el `evento_id` ya existe, lo ignora (un mensaje con QoS 1 puede llegar dos veces). Si es una salida sin stock, la rechaza y publica un aviso en `fruitai/aviso`.",
   "El servicio publica el stock y los resúmenes (salidas de hoy y de la semana) como mensajes retenidos.",
   "Home Assistant crea los sensores automáticamente por *MQTT discovery* y actualiza el panel.",
 ]) c.push(NUM("flujo", t));
-c.push(P("El registro también puede hacerse desde el panel de Home Assistant: el ESP32 publica qué fruta tiene confirmada (sensor «Fruta detectada») y los botones Entrada y Salida del panel le envían la orden por MQTT. El ESP32 la trata igual que un botón físico, de modo que la lógica anti-duplicados se aplica en ambos casos."));
+c.push(P("La orden se procesa en el ESP32 y no en Home Assistant: así la lógica anti-duplicados se aplica siempre en el mismo lugar. Si la orden se ignora (no hay fruta confirmada o ya se registró), el ESP32 publica el motivo y llega como notificación al celular. Los botones del panel aparecen deshabilitados cuando el ESP32 está desconectado."));
 c.push(H2("6.4 Base de datos"));
 c.push(P("Tabla de frutas, tabla de movimientos (fruta, tipo, cantidad, confianza, fecha y `evento_id` único) y tabla de lecturas de ambiente. El stock no se guarda: se calcula siempre a partir de los movimientos, de modo que el historial es la única fuente de verdad."));
 c.push(H2("6.5 Consultas en lenguaje natural"));
@@ -201,14 +204,14 @@ c.push(VIN("un simulador por línea de comandos para generar movimientos de prue
 c.push(VIN("un «ESP32 virtual» que usa la cámara del computador, el mismo modelo exportado y la misma lógica de confirmación que el firmware."));
 c.push(P("Así, el servicio, la base de datos, Home Assistant y el agente se probaron de extremo a extremo antes de tener el hardware, y el firmware solo cambia la fuente de las imágenes y de los botones."));
 c.push(H2("7.2 Lógica de confirmación anti-duplicados"));
-c.push(P("La cámara clasifica unas cinco imágenes por segundo y la misma fruta permanece visible durante muchos fotogramas, por lo que el inventario no puede cambiar con cada predicción. Se implementó una máquina de estados (Figura 2):"));
+c.push(P("La cámara clasifica unas cinco imágenes por segundo y la misma fruta permanece visible durante muchos fotogramas, por lo que el inventario no puede cambiar con cada predicción. Se implementó una máquina de estados (Figura 3):"));
 c.push(...figura("estados.png", 600, 204, "Máquina de estados de la lógica de confirmación."));
 for (const t of [
   "**ESPERANDO → CONFIRMADA:** una fruta queda confirmada cuando el modelo la predice durante 5 fotogramas seguidos (≈ 1 s) con confianza ≥ 0,75. Si cambia la predicción o baja la confianza, el conteo se reinicia.",
-  "**CONFIRMADA → REGISTRADA:** solo con una fruta confirmada, un botón genera **un** movimiento. Sin fruta confirmada, la pulsación se ignora.",
-  "**REGISTRADA → ESPERANDO:** después del registro, nuevas pulsaciones se ignoran hasta que la fruta se retire, es decir, hasta que la cámara vea «fondo» durante 5 fotogramas.",
+  "**CONFIRMADA → REGISTRADA:** solo con una fruta confirmada, la orden Entrada o Salida genera **un** movimiento. Sin fruta confirmada, la orden se ignora.",
+  "**REGISTRADA → ESPERANDO:** después del registro, nuevas órdenes se ignoran hasta que la fruta se retire, es decir, hasta que la cámara vea «fondo» durante 5 fotogramas.",
 ]) c.push(NUM("estados", t));
-c.push(P("El sensor de presencia solo activa la cámara y no se usa para decidir el retiro: un PIR deja de detectar una fruta quieta, lo que permitiría registrarla dos veces. Las manzanas roja y verde son clases distintas del modelo, pero se registran como la misma fruta del inventario («manzana»). La lógica se escribió primero en Python (para el ESP32 virtual) y se tradujo línea por línea a C++ para el firmware; ambas versiones pasan el mismo conjunto de pruebas."));
+c.push(P("Las manzanas roja y verde son clases distintas del modelo, pero se registran como la misma fruta del inventario («manzana»). La lógica se escribió primero en Python (para el ESP32 virtual) y se tradujo línea por línea a C++ para el firmware; ambas versiones pasan el mismo conjunto de pruebas."));
 c.push(H2("7.3 Conjunto de datos"));
 c.push(...tabla("Conjunto de datos de entrenamiento.", ["Fuente", "Clases", "Imágenes activas"], [
   ["Fruits-360 (Mureșan y Oltean, 2018; CC BY-SA 4.0), 100 × 100 px, fondo blanco", "banano, kiwi, manzana roja, manzana verde, pera", "150 por clase (60 en manzana verde)"],
@@ -228,9 +231,9 @@ c.push(...tabla("Versiones del modelo.", ["Versión", "Cambio", "Precisión int8
 ], [1100, 5460, 2800]));
 c.push(P("El modelo final (v5) ocupa 300 KB. Para un ESP32 de 240 MHz, Edge Impulse estima 615 ms por inferencia, 135 KB de RAM y 297 KB de flash con la arquitectura elegida. [PENDIENTE: tiempo de inferencia medido en el ESP32-S3.]"));
 c.push(H2("7.5 Firmware del ESP32-S3"));
-c.push(P("El firmware captura la imagen de la OV2640 en resolución QVGA, recorta el cuadrado central y lo reduce a 96 × 96, ejecuta el modelo, aplica la lógica de confirmación y lee los botones con antirrebote. Publica por MQTT con un `evento_id` formado por un número aleatorio de arranque y un contador. Como la librería MQTT usada publica con QoS 0, cada movimiento se guarda en una cola de hasta 8 elementos y se reenvía al reconectar; el servicio descarta los repetidos. El estado de conexión se publica con LWT y Home Assistant lo muestra como el sensor «ESP32 conectado». Soporta las placas Freenove ESP32-S3 WROOM CAM y Seeed XIAO ESP32S3 Sense."));
+c.push(P("El firmware captura la imagen de la OV2640 en resolución QVGA, recorta el cuadrado central y lo reduce a 96 × 96, ejecuta el modelo, aplica la lógica de confirmación y atiende las órdenes Entrada y Salida que llegan desde Home Assistant. Publica por MQTT con un `evento_id` formado por un número aleatorio de arranque y un contador. Como la librería MQTT usada publica con QoS 0, cada movimiento se guarda en una cola de hasta 8 elementos y se reenvía al reconectar; el servicio descarta los repetidos. El estado de conexión se publica con LWT y Home Assistant lo muestra como el sensor «ESP32 conectado». Soporta las placas Freenove ESP32-S3 WROOM CAM y Seeed XIAO ESP32S3 Sense. El soporte para pulsadores físicos, sensor de presencia y DHT22 ya está programado, pero desactivado por opciones de compilación (mejora futura)."));
 c.push(H2("7.6 Agente conversacional"));
-c.push(P("En Home Assistant se configuró un asistente que primero intenta resolver la frase con las oraciones locales y, si no encaja, la envía al agente de Ollama. El agente recibe en sus instrucciones el stock, las salidas de hoy y de la semana, el total de frutas, la fruta con menos y con más unidades, las agotadas, la que más salió en la semana y la temperatura del frutero, todo calculado por plantillas de Home Assistant. Se desactivaron las herramientas de control del hogar del agente: el modelo solo consulta y no necesita actuar sobre dispositivos."));
+c.push(P("En Home Assistant se configuró un asistente que primero intenta resolver la frase con las oraciones locales y, si no encaja, la envía al agente de Ollama. El agente recibe en sus instrucciones el stock, las salidas de hoy y de la semana, el total de frutas, la fruta con menos y con más unidades, las agotadas, la que más salió en la semana y, cuando exista el sensor, la temperatura del frutero, todo calculado por plantillas de Home Assistant. Se desactivaron las herramientas de control del hogar del agente: el modelo solo consulta y no necesita actuar sobre dispositivos."));
 
 // ---------- 8. Pruebas ----------
 c.push(H1("8. Pruebas y resultados"));
@@ -273,14 +276,14 @@ c.push(...tabla("Resultados del agente conversacional.", ["Configuración", "Com
   ["Qwen 2.5 3B, primera versión (herramientas activadas, sin datos calculados)", "0/10", "—", "28,6 s"],
   ["Qwen 2.5 3B, versión final", "10/10", "8/8", "0,7 s"],
 ], [5160, 1300, 1300, 1600]));
-c.push(P("En la primera versión el modelo respondía que no tenía información: las herramientas de control del hogar le entregaban la descripción de todas las entidades y el modelo intentaba usarlas en lugar de leer los datos. Al desactivarlas y entregar los totales y comparaciones ya calculados, acertó todas las preguntas. Mediciones en un computador portátil con Docker. [PENDIENTE: tiempos en la Raspberry Pi 5 y comparación con Qwen 2.5 1.5B.]"));
+c.push(P("En la primera versión el modelo respondía que no tenía información: las herramientas de control del hogar le entregaban la descripción de todas las entidades y el modelo intentaba usarlas en lugar de leer los datos. Al desactivarlas y entregar los totales y comparaciones ya calculados, acertó todas las preguntas. Mediciones en un computador portátil con Docker; la pregunta de temperatura se respondió con una lectura de ambiente simulada, porque el sensor quedó como mejora futura. [PENDIENTE: tiempos en la Raspberry Pi 5 y comparación con Qwen 2.5 1.5B.]"));
 c.push(H2("8.4 Prueba del sistema completo"));
-c.push(PEND("[PENDIENTE: 20 movimientos reales en la estación, mezclando frutas, entradas y salidas e incluyendo los casos difíciles (pulsar dos veces, cambiar de fruta sin retirarla, salida con stock 0). Por cada uno: fruta, tipo, si se registró correctamente y tiempo hasta confirmar. Comparar con la tabla de movimientos de SQLite.]"));
+c.push(PEND("[PENDIENTE: 20 movimientos reales con el ESP32 y el panel de Home Assistant, mezclando frutas, entradas y salidas e incluyendo los casos difíciles (pulsar Entrada dos veces, cambiar de fruta sin retirarla, salida con stock 0). Por cada uno: fruta, tipo, si se registró correctamente y tiempo hasta confirmar. Comparar con la tabla de movimientos de SQLite.]"));
 
 // ---------- 9. Conclusiones ----------
 c.push(H1("9. Conclusiones"));
 for (const t of [
-  "La separación entre **identificar** (cámara y modelo) y **registrar** (botón explícito), junto con la confirmación por fotogramas consecutivos y el estado REGISTRADA, evita que el inventario cambie con cada predicción: las pruebas muestran un único movimiento aunque la fruta permanezca visible y el botón se pulse varias veces.",
+  "La separación entre **identificar** (cámara y modelo) y **registrar** (orden explícita desde el panel), junto con la confirmación por fotogramas consecutivos y el estado REGISTRADA, evita que el inventario cambie con cada predicción: las pruebas muestran un único movimiento aunque la fruta permanezca visible y la orden se repita.",
   "La cuantización a int8, necesaria para el microcontrolador, puede degradar un modelo que en punto flotante es perfecto. Medir la pérdida capa por capa permitió identificar la causa en lugar de probar ajustes al azar, y el entrenamiento con cuantización simulada eliminó la diferencia entre float32 e int8.",
   "La calidad de los datos pesó más que la arquitectura en las clases difíciles: etiquetas incorrectas, fotos fuera del montaje y una clase dominada por una sola variedad explicaban los errores de la manzana verde.",
   "Combinar oraciones locales con un modelo de lenguaje pequeño da respuestas exactas e inmediatas para las preguntas frecuentes y deja al modelo solo las abiertas. Entregarle los datos ya calculados fue decisivo para que un modelo de 3B respondiera correctamente.",
@@ -289,6 +292,8 @@ for (const t of [
 ]) c.push(VIN(t));
 c.push(H2("9.1 Trabajo futuro"));
 for (const t of [
+  "Estación física de registro: caja con fondo e iluminación fijos, pulsadores Entrada y Salida, LED y sensor de presencia, para registrar sin el celular. El firmware ya la soporta (opciones de compilación) y su plano y conexiones están documentados en el repositorio.",
+  "Sensor de temperatura y humedad (DHT22) para las condiciones de conservación: Home Assistant y el agente ya tienen los sensores preparados.",
   "Fotos propias de pera y kiwi, y recaptura del conjunto de datos con la cámara del ESP32.",
   "Robustez a otros ambientes: fotos en varios lugares y una clase «fondo» más variada.",
   "Detección de objetos (por ejemplo FOMO) para reconocer varias frutas a la vez.",

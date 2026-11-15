@@ -14,7 +14,7 @@ simulador/               simula el ESP32 publicando los mismos mensajes MQTT
 homeassistant/           configuration.yaml y automations.yaml (el resto lo crea HA)
 scripts/                 utilidades (usuarios MQTT)
 firmware/fruitai_camara/  ESP32-S3: cámara + TinyML + botones + MQTT (firmware principal)
-firmware/esp32_ambiente/  ESP32: solo sensor DHT (prueba)
+firmware/esp32_ambiente/  ESP32: solo sensor DHT (prueba; mejora futura)
 bitacora.md              bitácora diaria
 ```
 
@@ -31,6 +31,9 @@ Home Assistant: http://localhost:8123 (o la IP del equipo).
 2. Ajustes → Dispositivos y servicios → Agregar → **MQTT**: broker `mosquitto`, puerto `1883`,
    usuario/clave `MQTT_USUARIO_HA` / `MQTT_CLAVE_HA` del `.env`.
 3. Aparece el dispositivo **FruitAI** con los sensores "Stock manzana", "Salidas hoy banano", etc.
+
+Alcance actual: Raspberry Pi + ESP32-S3 con cámara, todo operado desde Home Assistant. La
+estación física (pulsadores, PIR, DHT22) es una [mejora futura](docs/mejoras_futuras.md).
 
 Guía completa (materiales, estación, Raspberry Pi, app, agente y ESP32): [docs/puesta_en_marcha.md](docs/puesta_en_marcha.md).
 
@@ -95,12 +98,12 @@ Del ESP32 hacia Home Assistant (los crea el servicio con MQTT discovery):
   `{"estado": "CONFIRMADA", "fruta": "pera", "confianza": 0.93, "ve": "pera", "ve_confianza": 0.91}`
   → sensores "Fruta detectada" y "Estado detección".
 - `fruitai/esp32/foto` (opcional): JPEG de la cámara → cámara del panel. Las imágenes solo
-  salen del ESP32 si se activa (`PUBLICAR_FOTO 1` en el firmware; el virtual la manda salvo
-  `--sin-foto`). El reconocimiento siempre se hace en el ESP32.
+  salen del ESP32 con `PUBLICAR_FOTO 1` (por defecto, para ver la cámara en el panel; el
+  virtual la manda salvo `--sin-foto`). El reconocimiento siempre se hace en el ESP32.
 
 De Home Assistant hacia el ESP32:
 - `fruitai/esp32/boton`: `entrada` / `salida` (botones + / − del panel). El ESP32 aplica la
-  misma lógica anti-duplicados que con el botón físico; si la ignora, explica por qué en
+  lógica anti-duplicados (la misma que tendrían los pulsadores físicos, mejora futura); si la ignora, explica por qué en
   `fruitai/aviso`.
 
 ## Base de datos

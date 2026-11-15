@@ -1,3 +1,8 @@
+> **Desactualizado.** Este fue el borrador para revisar. La versión vigente es
+> `FruitAI_documento.docx` (se genera con `docs/documento/generar.js`), ya ajustada al
+> alcance actual: Raspberry Pi + ESP32-S3 con cámara, todo operado desde Home Assistant; la
+> estación física con pulsadores, PIR y DHT22 pasó a mejoras futuras.
+
 # Borrador de secciones para `ProyectoFrutIA.docx`
 
 Continúa el documento desde donde se corta (Marco Digital). Las marcas
