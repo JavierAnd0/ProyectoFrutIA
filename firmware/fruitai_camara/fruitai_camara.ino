@@ -16,7 +16,7 @@
 //  4. Placa: "ESP32S3 Dev Module" (o "XIAO_ESP32S3"), PSRAM: "OPI PSRAM".
 
 // ====================== Configuración ======================
-#include <fruitai_inferencing.h>   // MODELO_H: <nombre-proyecto-EI>_inferencing.h
+#include <FruitAi_inferencing.h>   // librería de Edge Impulse (firmware/fruitai_camara/libreria/)
 
 // Placa: descomentar UNA.
 #define PLACA_FREENOVE_S3    // Freenove ESP32-S3 WROOM CAM / ESP32-S3-EYE (mismo pinout)

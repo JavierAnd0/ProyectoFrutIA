@@ -71,11 +71,10 @@ durante `FRAMES_RETIRO` fotogramas. Sin PIR: `USAR_PIR 0`.
 1. **Arduino IDE 2** → Gestor de placas → **esp32** de Espressif (3.x).
 2. Gestor de librerías → **PubSubClient** (Nick O'Leary). Con `USAR_DHT 1`, también
    **DHT sensor library** (Adafruit).
-3. **Edge Impulse** → *Deployment* → **Arduino library** → *Build* (con el
-   optimizador EON y la versión int8). En el IDE: *Sketch → Include Library →
-   Add .ZIP Library…*.
-4. En el `.ino`, cambiar `#include <fruitai_inferencing.h>` por el nombre de la
-   librería descargada (`<nombre-del-proyecto>_inferencing.h`).
+3. Instalar la librería del modelo, ya generada en `libreria/FruitAi_inferencing.zip`
+   (Edge Impulse, Arduino library, int8 + EON): *Sketch → Include Library → Add .ZIP
+   Library…*. El `.ino` ya la incluye (`#include <FruitAi_inferencing.h>`).
+4. Si se regenera en Edge Impulse con otro nombre de proyecto, cambiar ese `#include`.
 5. `cp secrets.h.example secrets.h` y completar Wi-Fi (2,4 GHz) y la IP de la Pi.
    Usuario y clave MQTT: `MQTT_USUARIO_ESP32` / `MQTT_CLAVE_ESP32` del `.env`.
 6. Herramientas: placa **ESP32S3 Dev Module** (Freenove) o **XIAO_ESP32S3**;

@@ -35,6 +35,8 @@ Home Assistant: http://localhost:8123 (o la IP del equipo).
 Alcance actual: Raspberry Pi + ESP32-S3 con cámara, todo operado desde Home Assistant. La
 estación física (pulsadores, PIR, DHT22) es una [mejora futura](docs/mejoras_futuras.md).
 
+Montaje real paso a paso (Raspberry + ESP32): [docs/montaje_paso_a_paso.md](docs/montaje_paso_a_paso.md).
+
 Guía completa (materiales, estación, Raspberry Pi, app, agente y ESP32): [docs/puesta_en_marcha.md](docs/puesta_en_marcha.md).
 
 Respaldo y restauración en la Raspberry Pi (sin copiar la SD completa): [docs/restaurar.md](docs/restaurar.md).
