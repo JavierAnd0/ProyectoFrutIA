@@ -38,6 +38,8 @@ que quedó como mejora futura ([docs/mejoras_futuras.md](../../docs/mejoras_futu
 Se elige con un `#define` al inicio del `.ino`:
 
 - `PLACA_FREENOVE_S3`: Freenove ESP32-S3 WROOM CAM y clones "ESP32-S3-EYE" (N8R8/N16R8).
+  Probada con la **GOOUUU ESP32-S3-CAM V1.5** (16 MB de flash, 8 MB de PSRAM): mismo
+  pinout. Se carga por el puerto USB marcado **TTL**.
 - `PLACA_XIAO_S3`: Seeed XIAO ESP32S3 Sense.
 
 Otra placa: copiar sus pines de cámara del ejemplo `CameraWebServer` (`camera_pins.h`).
@@ -79,9 +81,35 @@ durante `FRAMES_RETIRO` fotogramas. Sin PIR: `USAR_PIR 0`.
    Usuario y clave MQTT: `MQTT_USUARIO_ESP32` / `MQTT_CLAVE_ESP32` del `.env`.
 6. Herramientas: placa **ESP32S3 Dev Module** (Freenove) o **XIAO_ESP32S3**;
    **PSRAM: OPI PSRAM**; **Partition scheme: Huge APP (3MB No OTA)**.
+   Con la GOOUUU: **Flash Size: 16MB** y **Upload Speed: 460800** (a 921600 la carga falla
+   con *Unable to verify flash chip connection*).
 7. Cargar y abrir el monitor serie a 115200.
 
 La primera compilación de la librería de Edge Impulse tarda varios minutos; es normal.
+
+Desde la terminal, con `arduino-cli` (librería descomprimida en una carpeta cualquiera):
+
+```bash
+arduino-cli compile --fqbn "esp32:esp32:esp32s3:PSRAM=opi,FlashSize=16M,PartitionScheme=huge_app,UploadSpeed=460800" --library <ruta>/FruitAi_inferencing --build-path /tmp/fruitai-build firmware/fruitai_camara
+arduino-cli upload --fqbn "esp32:esp32:esp32s3:PSRAM=opi,FlashSize=16M,PartitionScheme=huge_app,UploadSpeed=460800" --input-dir /tmp/fruitai-build -p /dev/cu.usbserial-10 firmware/fruitai_camara
+```
+
+### Librería parcheada para el ESP32-S3
+
+La librería que genera Edge Impulse (EON + kernels ESP-NN) reinicia el ESP32-S3 en el primer
+`run_classifier`. Primero sale *Failed to allocate persistent buffer ... EI_MAX_OVERFLOW_BUFFER_COUNT*
+y, al subir ese límite, *CORRUPT HEAP: Bad head* al liberar memoria. El zip de `libreria/` ya
+trae corregidos dos archivos (buscar "FruitAI" en ellos):
+
+- `edge-impulse-sdk/porting/ei_classifier_porting.h`: en el S3, el límite de buffers fuera
+  del arena pasa de 30 a 512.
+- `tflite-model/tflite_learn_*_compiled.cpp`: esos buffers se reservan con 64 bytes de colchón
+  a cada lado (los kernels ESP-NN escriben fuera de ellos) y se libera el puntero original.
+  El arena lleva además 4 KB de colchón al final.
+
+Resultado medido: ~200 ms por inferencia. Sin ESP-NN (`-DEI_CLASSIFIER_TFLITE_ENABLE_ESP_NN=0`)
+también funciona, pero tarda ~4,3 s. **Si se regenera la librería en Edge Impulse, hay que
+volver a aplicar estos dos cambios.**
 
 Salida esperada en el monitor serie:
 

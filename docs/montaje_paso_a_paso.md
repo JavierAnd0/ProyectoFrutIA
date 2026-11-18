@@ -39,6 +39,17 @@ git clone -b claude/lucid-gauss-raw1x3 https://github.com/JavierAnd0/ProyectoFru
 ```
 (Si ya existía la carpeta: `cd ProyectoFrutIA && git pull origin claude/lucid-gauss-raw1x3`.)
 
+**Si el repositorio es privado** (la Pi no tiene credenciales de GitHub), no clones: copia el
+proyecto entero desde el Mac en el paso 1.4, que lleva código y estado juntos:
+```bash
+rsync -a --exclude=.venv --exclude=ollama --exclude=dataset ./ <usuario>@<IP-Pi>:~/ProyectoFrutIA/
+```
+
+**Red de la universidad o pública:** suelen aislar los equipos (el Mac no ve a la Pi) y la Pi
+puede arrancar con la hora atrasada, lo que hace fallar `apt` con *Not live until…*. Arreglo:
+`sudo date -s "AAAA-MM-DD HH:MM"` y `sudo timedatectl set-ntp true`; para entrar desde el Mac,
+Tailscale (`sudo tailscale up --qr`) y `ssh` a su IP `100.x.y.z`.
+
 ### 1.4 Copiar el estado desde el Mac (en el Mac)
 Primero detén el sistema del Mac (para que no haya dos brokers ni dos Home Assistant):
 ```bash
@@ -73,7 +84,8 @@ Deben verse 4 contenedores `Up`. Prueba sin ESP32: `./scripts/fruitai.sh entrada
 ```bash
 curl -fsSL https://tailscale.com/install.sh | sh
 sudo tailscale up
-sudo tailscale serve --bg 8123
+sudo tailscale set --operator=$USER
+sudo tailscale serve --bg --tls-terminated-tcp=443 tcp://localhost:8123
 ```
 `tailscale serve status` muestra la nueva dirección (`https://raspberrypi.<tu-red>.ts.net`).
 Ponla en HA (Ajustes → Sistema → Red → **Internet**) y en la app del celular (Ajustes de la
