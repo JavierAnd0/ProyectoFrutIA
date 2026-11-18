@@ -10,7 +10,7 @@ Hay dos estados guardados del sistema:
 | Respaldo | Qué tiene | ¿Usarlo? |
 |---|---|---|
 | **La carpeta del proyecto en el Mac** (donde corriste todo en Docker) | Lo más nuevo: tu usuario y contraseña de HA, MQTT, el agente con el prompt nuevo, el panel, la app del celular, los movimientos de prueba | **Sí, este** |
-| El respaldo antiguo de la Raspberry (el `.tar.gz` o la copia con `rsync`) | El estado de antes de la simulación en el Mac: sin el agente nuevo, sin el registro desde el panel | Solo si perdiste lo del Mac |
+| El respaldo antiguo de la Raspberry (`~/Desktop/fruitai-respaldo-sd`, del 12 de noviembre) | El estado de antes de la simulación en el Mac: sin el agente nuevo, sin el registro desde el panel. Su `.env` y su `passwd` de MQTT son otros, así que no se mezclan con los del Mac | Solo si perdiste lo del Mac (entonces copia esa carpeta completa, no partes) |
 
 Del Mac se copian `homeassistant/`, `data/`, `mosquitto/` y `.env`. El código se baja de GitHub.
 
@@ -50,6 +50,12 @@ rsync -av homeassistant data mosquitto .env <usuario>@192.168.1.20:~/ProyectoFru
 ```
 
 ### 1.5 Levantar todo (en la Raspberry)
+Primero, permisos de Mosquitto: el broker solo acepta `passwd` si es suyo (uid 1883), y
+`rsync` lo deja a nombre de tu usuario:
+```bash
+cd ~/ProyectoFrutIA && sudo chown 1883:1883 mosquitto/config/passwd && sudo chmod 700 mosquitto/config/passwd && sudo chown -R 1883:1883 mosquitto/data
+```
+Luego:
 ```bash
 cd ~/ProyectoFrutIA && docker compose --profile ollama up -d --build
 docker exec fruitai-ollama ollama pull qwen2.5:3b
@@ -67,7 +73,7 @@ Deben verse 4 contenedores `Up`. Prueba sin ESP32: `./scripts/fruitai.sh entrada
 ```bash
 curl -fsSL https://tailscale.com/install.sh | sh
 sudo tailscale up
-sudo tailscale serve --bg --tls-terminated-tcp=443 tcp://localhost:8123
+sudo tailscale serve --bg 8123
 ```
 `tailscale serve status` muestra la nueva dirección (`https://raspberrypi.<tu-red>.ts.net`).
 Ponla en HA (Ajustes → Sistema → Red → **Internet**) y en la app del celular (Ajustes de la
