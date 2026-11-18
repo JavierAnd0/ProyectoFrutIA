@@ -135,6 +135,33 @@ Anota los **ms** de `ve:`: es el tiempo de inferencia real para el documento.
 "ESP32 conectado" activo, la cámara visible, y con una fruta debajo "Fruta detectada" la
 muestra como CONFIRMADA. Pulsa **Entrada**: el stock sube.
 
+### 2.7 Red en la universidad (la que quedó funcionando)
+
+El Wi-Fi de la universidad aísla los equipos (el ESP32 no ve a la Pi) y el hotspot de un
+celular se corta. Lo estable: un **router propio** (TP-Link TL-WR840N, solo 2,4 GHz) **sin
+internet**, solo para que la Pi y el ESP32 se vean, y la Pi saca internet **por cable** de la
+red de la universidad:
+
+```
+ESP32 ──Wi-Fi──► TP-LINK_D4FC (192.168.0.x, sin internet) ◄──Wi-Fi── Pi (192.168.0.10)
+                                                                      Pi ──cable──► red USCO ──► internet / Tailscale
+```
+
+En la Pi (perfil `router`, IP fija y **sin** ruta por defecto, para que internet siga por el cable):
+```bash
+sudo nmcli con add type wifi ifname wlan0 con-name router ssid TP-LINK_D4FC wifi-sec.key-mgmt wpa-psk wifi-sec.psk "CLAVE"
+sudo nmcli con mod router ipv4.method manual ipv4.addresses 192.168.0.10/24 ipv4.never-default yes ipv4.ignore-auto-dns yes ipv6.method disabled connection.autoconnect-priority 50 802-11-wireless.powersave 2
+sudo nmcli con up router
+```
+En `secrets.h` del ESP32: `WIFI_SSID "TP-LINK_D4FC"` y `MQTT_HOST "192.168.0.10"`.
+
+Comprobado: ESP32 en `192.168.0.102` conectado a MQTT, foto y video en vivo de la cámara por
+`https://fruitai.tail4ff3be.ts.net`. Si el router algún día tiene internet (cable de la pared
+al puerto **azul**), sirve igual: la Pi seguiría usando el cable.
+
+`802-11-wireless.powersave 2` apaga el ahorro de energía del Wi-Fi de la Pi, que con hotspots
+de celular causaba desconexiones.
+
 ---
 
 ## Fase 3 — Ubicar la cámara y mejorar la precisión
